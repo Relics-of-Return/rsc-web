@@ -1,0 +1,43 @@
+{
+  "name": "RelicsofReturn",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@2003scape/rsc-archiver": "^1.1.1",
+    "@2003scape/rsc-data": "^1.0.18",
+    "@2003scape/rsc-landscape": "^2.0.1",
+    "@2003scape/rsc-world-map": "^1.0.0",
+    "@radix-ui/react-slot": "^1.3.0",
+    "canvas": "^3.2.3",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.24.0",
+    "next": "16.2.10",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "server-only": "^0.0.1",
+    "swr": "^2.4.2",
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "autoprefixer": "^10.5.3",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.10",
+    "postcss": "^8.5.19",
+    "tailwindcss": "^4.3.2",
+    "typescript": "^5"
+  },
+  "overrides": {
+    "canvas": "^3.2.3"
+  }
+}

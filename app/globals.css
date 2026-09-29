@@ -1,0 +1,202 @@
+@import "tailwindcss";
+
+@theme {
+  /* Warm earthy stone — closer to Classic's brown UI than cool grey */
+  --color-stone-950: #14110d;
+  --color-stone-900: #1e1913;
+  --color-stone-800: #2a231a;
+  --color-stone-700: #3a3023;
+
+  --color-gold-400: #f0c674;
+  --color-gold-500: #d4af37;
+  --color-gold-600: #b59026;
+
+  --color-rune-red: #8a2f2f;
+  --color-rune-blue: #4a90a4;
+  --color-ember: #c65d3b;
+  --color-moss: #6d8a3f;
+  --color-parchment: #d8c9a3;
+
+  --color-text-primary: #eae4d8;
+  --color-text-secondary: #a89f8f;
+  --color-text-muted: #6e6459;
+
+  /* Placeholder until the classic pixel serif is bundled (public/fonts) */
+  --font-adventure: "Book Antiqua", "Palatino Linotype", Palatino, serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gold-600) var(--color-stone-900);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--color-stone-900);
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--color-gold-600);
+  border-radius: 20px;
+  border: 2px solid var(--color-stone-900);
+}
+
+::selection {
+  background-color: rgba(212, 175, 55, 0.3);
+  color: var(--color-text-primary);
+}
+
+/*
+ * Live player markers drawn over @2003scape/rsc-world-map. The markers are
+ * created outside React (see components/world-map/player-markers.ts), so their
+ * styling lives here rather than in Tailwind classes. The 15px box matches the
+ * library's point-of-interest icons, which is what its zoom handler assumes.
+ */
+
+.rsc-map-marker {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  transform-origin: 0 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.rsc-map-marker:hover {
+  z-index: 4;
+}
+
+.rsc-map-marker__pin {
+  position: absolute;
+  inset: 0;
+  /* outlines the union of both bars so the cross reads over any terrain */
+  filter: drop-shadow(0 0 1px #000) drop-shadow(0 0 1px #000);
+}
+
+.rsc-map-marker__pin::before,
+.rsc-map-marker__pin::after {
+  content: '';
+  position: absolute;
+  background-color: #fcce48;
+}
+
+.rsc-map-marker__pin::before {
+  top: 1px;
+  bottom: 1px;
+  left: 6px;
+  width: 3px;
+}
+
+.rsc-map-marker__pin::after {
+  top: 6px;
+  right: 1px;
+  left: 1px;
+  height: 3px;
+}
+
+.rsc-map-marker__name {
+  position: absolute;
+  bottom: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 4px;
+  border: 1px solid rgba(0, 0, 0, 0.85);
+  border-radius: 2px;
+  background-color: rgba(20, 17, 13, 0.82);
+  box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.35);
+  color: #fcce48;
+  font: 500 11px/1.3 var(--font-body);
+  white-space: nowrap;
+  text-shadow: 1px 1px 0 #000;
+  pointer-events: none;
+}
+
+/* staff crown in front of the name, like the one the game client draws */
+.rsc-map-marker__crown {
+  display: inline-block;
+  width: 13px;
+  height: 11px;
+  margin-right: 3px;
+  vertical-align: -1px;
+  image-rendering: pixelated;
+}
+
+/* names are unreadable at half zoom, and opt-out when the map gets crowded */
+.rsc-map-marker--compact .rsc-map-marker__name,
+.rsc-map-marker--anonymous .rsc-map-marker__name {
+  display: none;
+}
+
+.rsc-map-marker--selected {
+  z-index: 5;
+}
+
+.rsc-map-marker--selected .rsc-map-marker__pin::before,
+.rsc-map-marker--selected .rsc-map-marker__pin::after {
+  background-color: #fff;
+}
+
+.rsc-map-marker--selected .rsc-map-marker__name {
+  background-color: var(--color-gold-500);
+  border-color: #000;
+  color: var(--color-stone-950);
+  text-shadow: none;
+}
+
+.rsc-map-marker--selected::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 1px solid rgba(252, 206, 72, 0.7);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: rsc-map-pulse 2s ease-out infinite;
+}
+
+@keyframes rsc-map-pulse {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.9;
+  }
+  70%,
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rsc-map-marker--selected::after {
+    animation: none;
+    opacity: 0.8;
+  }
+}
+
+/*
+ * World 2's map (the botting world) uses the same markers in moss green, so
+ * the two maps are never mistaken for each other. The class sits on the map
+ * container, and the markers are created inside it.
+ */
+.rsc-map--bot .rsc-map-marker__pin::before,
+.rsc-map--bot .rsc-map-marker__pin::after {
+  background-color: #a3d13f;
+}
+
+.rsc-map--bot .rsc-map-marker__name {
+  box-shadow: 0 0 0 1px rgba(109, 138, 63, 0.45);
+  color: #bfe06a;
+}
+
+.rsc-map--bot .rsc-map-marker--selected .rsc-map-marker__name {
+  background-color: var(--color-moss);
+  color: var(--color-stone-950);
+}
+
+.rsc-map--bot .rsc-map-marker--selected::after {
+  border-color: rgba(163, 209, 63, 0.7);
+}
