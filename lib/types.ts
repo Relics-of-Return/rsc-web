@@ -49,12 +49,26 @@ export interface HiscoreRank {
   experience: number
   /** Staff rank, drawn as a crown in front of the username (0 = player). */
   staffRank?: number
+  /** Account type: 0 standard, 1 Ironman. */
+  accountMode?: number
+  /** How far the diaries have tempered an Ironman's helm, 0 (iron) to 4 (rune). */
+  temper?: number
 }
 
 /** Skill ranking table as returned by rsc-www's `/api/hiscores`. */
 export interface HiscoresData {
   ranks: HiscoreRank[]
   pages?: number
+}
+
+/**
+ * A player's achievement diaries as the lookup shows them: per area, how many
+ * tiers are complete and how many claimed, and the Ironman helm's temper.
+ */
+export interface DiarySummary {
+  temper: number
+  complete: Record<string, number>
+  claimed: Record<string, number>
 }
 
 /** Per-skill rank of a single player. */
@@ -70,6 +84,10 @@ export interface PlayerRanksData {
   ranks: Record<string, PlayerRank> | null
   /** Staff rank, drawn as a crown in front of the username (0 = player). */
   staffRank?: number
+  /** Account type: 0 standard, 1 Ironman. */
+  accountMode?: number
+  /** How far the player's achievement diaries have got. */
+  diaries?: DiarySummary | null
   /** The character sprites, colours and equipment to draw the avatar with. */
   appearance?: PlayerAppearance | null
 }
@@ -98,6 +116,16 @@ export interface NewsListData {
 
 /** Single article as returned by rsc-www's `/api/news?id=N`. */
 export interface NewsArticleData {
+  articles: NewsFullArticle | null
+}
+
+/** News management response returned to administrators. */
+export interface AdminNewsData {
+  articles: NewsSummaryArticle[]
+  pages?: number
+}
+
+export interface AdminNewsArticleData {
   articles: NewsFullArticle | null
 }
 

@@ -1,6 +1,8 @@
 import type {
   AbuseReportDetail,
   AbuseReportsData,
+  AdminNewsArticleData,
+  AdminNewsData,
   LoginResult,
   LogoutResult,
   PlayersData,
@@ -66,15 +68,18 @@ export async function getSession(): Promise<SessionData> {
   return getJSON<SessionData>('/api/session')
 }
 
+/** `accountMode` is 0 for a standard account, 1 for an Ironman. */
 export async function registerAccount(
   username: string,
   password: string,
   confirm: string,
+  accountMode = 0,
 ): Promise<RegisterResult> {
   return postJSON<RegisterResult>('/api/register', {
     username,
     password,
     confirm,
+    accountMode,
   })
 }
 
@@ -165,6 +170,46 @@ export async function getAbuseReportDetail(id: number): Promise<AbuseReportDetai
  */
 export async function saveSiteSettings(changes: Partial<SiteSettings>): Promise<SiteSettings> {
   return adminJSON<SiteSettings>('/api/admin/settings', changes)
+}
+
+export async function getAdminNews(page = 0): Promise<AdminNewsData> {
+  return adminJSON<AdminNewsData>(`/api/admin/news?page=${page}`)
+}
+
+export async function getAdminNewsArticle(id: number): Promise<AdminNewsArticleData> {
+  return adminJSON<AdminNewsArticleData>(`/api/admin/news?id=${id}`)
+}
+
+export async function createNewsArticle(article: {
+  title: string
+  category: number
+  date: number
+  body: string
+}): Promise<{ success: boolean }> {
+  return adminJSON<{ success: boolean }>('/api/admin/news', {
+    action: 'create',
+    ...article,
+  })
+}
+
+export async function updateNewsArticle(article: {
+  id: number
+  title: string
+  category: number
+  date: number
+  body: string
+}): Promise<{ success: boolean }> {
+  return adminJSON<{ success: boolean }>('/api/admin/news', {
+    action: 'update',
+    ...article,
+  })
+}
+
+export async function deleteNewsArticle(id: number): Promise<{ success: boolean }> {
+  return adminJSON<{ success: boolean }>('/api/admin/news', {
+    action: 'delete',
+    id,
+  })
 }
 
 /** URL of the screenshot the reporter's client uploaded (staff session needed). */
