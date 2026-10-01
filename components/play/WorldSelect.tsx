@@ -1,11 +1,11 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import useSWR from 'swr'
 
-import { Button } from '@/components/ui/Button'
 import { SectionTitle } from '@/components/ui/SectionTitle'
 import { getWorlds } from '@/lib/api'
 import { countryName } from '@/lib/countries'
@@ -58,6 +58,24 @@ function playHref(world: WorldEntry): string {
   return `/play?world=${world.id}`
 }
 
+function WorldIcon({ world }: { world: WorldEntry }) {
+  return (
+    <Image
+      src={
+        world.id === 3
+          ? '/worlds/beta_testing_world_icon.webp'
+          : '/worlds/members_world_icon.webp'
+      }
+      alt=""
+      aria-hidden="true"
+      width={20}
+      height={20}
+      unoptimized
+      className="shrink-0 object-contain"
+    />
+  )
+}
+
 const SORT_VALUE: Record<SortKey, (world: WorldEntry) => string | number> = {
   world: (world) => world.id,
   // offline worlds sort below empty ones
@@ -65,44 +83,6 @@ const SORT_VALUE: Record<SortKey, (world: WorldEntry) => string | number> = {
   location: (world) => countryName(world.country),
   type: typeOf,
   activity: activityOf,
-}
-
-// the quietest online world of a kind. every world is in the same place, so
-// fewer players is what makes one better to play on than another
-function bestWorld(worlds: WorldEntry[], botting: boolean) {
-  return worlds
-    .filter((world) => isOnline(world) && Boolean(world.botting) === botting)
-    .sort((a, b) => (a.players ?? 0) - (b.players ?? 0) || a.id - b.id)[0]
-}
-
-function QuickPick({
-  label,
-  world,
-  note,
-}: {
-  label: string
-  world: WorldEntry | undefined
-  note: string
-}) {
-  return (
-    <div className="flex flex-col gap-3 rounded-lg border border-stone-700 bg-stone-800/60 p-5">
-      {world ? (
-        <Button asChild>
-          <Link href={playHref(world)}>{label}</Link>
-        </Button>
-      ) : (
-        <Button disabled className="cursor-not-allowed opacity-50">
-          {label}
-        </Button>
-      )}
-      <p className="text-sm text-text-primary">
-        {world
-          ? `${worldName(world)} · ${playersText(world)} · ${countryName(world.country)}`
-          : 'No world of this kind is online right now.'}
-      </p>
-      <p className="text-xs text-text-muted">{note}</p>
-    </div>
-  )
 }
 
 export function WorldSelect({ initialWorlds }: { initialWorlds: WorldEntry[] }) {
@@ -160,28 +140,7 @@ export function WorldSelect({ initialWorlds }: { initialWorlds: WorldEntry[] }) 
         {playing === 1 ? 'person' : 'people'} playing!
       </p>
 
-      <section aria-labelledby="quick-select" className="mt-10">
-        <h3
-          id="quick-select"
-          className="font-adventure text-lg uppercase tracking-wide text-gold-400"
-        >
-          Quick select
-        </h3>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <QuickPick
-            label="Choose best world for me"
-            world={bestWorld(worlds, false)}
-            note="The main game, played by hand."
-          />
-          <QuickPick
-            label="Choose best botting world"
-            world={bestWorld(worlds, true)}
-            note="Scripts are allowed here, with separate accounts and hiscores."
-          />
-        </div>
-      </section>
-
-      <section aria-labelledby="advanced-select" className="mt-12">
+      <section aria-labelledby="advanced-select" className="mt-10">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h3
             id="advanced-select"
@@ -249,10 +208,16 @@ export function WorldSelect({ initialWorlds }: { initialWorlds: WorldEntry[] }) 
                           onClick={(event) => event.stopPropagation()}
                           className="font-medium text-gold-400 hover:underline"
                         >
-                          {worldName(world)}
+                          <span className="inline-flex items-center gap-2">
+                            <WorldIcon world={world} />
+                            {worldName(world)}
+                          </span>
                         </Link>
                       ) : (
-                        <span className="font-medium text-text-muted">{worldName(world)}</span>
+                        <span className="inline-flex items-center gap-2 font-medium text-text-muted">
+                          <WorldIcon world={world} />
+                          {worldName(world)}
+                        </span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-text-primary">
