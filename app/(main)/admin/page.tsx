@@ -1,8 +1,10 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
 
 import { AbuseReports } from '@/components/admin/AbuseReports'
+import { NewsManagement } from '@/components/admin/NewsManagement'
 import { SiteSettings } from '@/components/admin/SiteSettings'
 import { Crown } from '@/components/players/Crown'
 import { Button } from '@/components/ui/Button'
@@ -20,6 +22,7 @@ import { canEditWorld } from '@/lib/landscape/access'
  */
 export default function AdminPage() {
   const { user, rank, loading } = useAuth()
+  const [activeTab, setActiveTab] = useState<'reports' | 'news' | 'settings'>('reports')
 
   if (loading) {
     return (
@@ -89,22 +92,80 @@ export default function AdminPage() {
       </p>
 
       {canEditWorld(rank) && (
-        <div className="mt-6">
+        <div className="mt-6 flex flex-wrap gap-2">
           <Button asChild variant="outline" size="sm">
             <Link href="/map/edit">Open the world editor</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/models/edit">Open the model editor</Link>
           </Button>
         </div>
       )}
 
-      {isAdministrator(rank) && (
-        <div className="mt-10">
-          <SiteSettings />
-        </div>
-      )}
-
       <div className="mt-10">
-        <AbuseReports />
+        <div className="overflow-x-auto border-b border-stone-700" role="tablist" aria-label="Administration tools">
+          <div className="flex min-w-max gap-1">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'reports'}
+              aria-controls="admin-panel-reports"
+              onClick={() => setActiveTab('reports')}
+              className={tabClass(activeTab === 'reports')}
+            >
+              Abuse Reports
+            </button>
+            {isAdministrator(rank) && (
+              <>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === 'news'}
+                  aria-controls="admin-panel-news"
+                  onClick={() => setActiveTab('news')}
+                  className={tabClass(activeTab === 'news')}
+                >
+                  News Management
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === 'settings'}
+                  aria-controls="admin-panel-settings"
+                  onClick={() => setActiveTab('settings')}
+                  className={tabClass(activeTab === 'settings')}
+                >
+                  Site Settings
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6">
+          {activeTab === 'reports' && (
+            <div id="admin-panel-reports" role="tabpanel" aria-label="Abuse Reports">
+              <AbuseReports />
+            </div>
+          )}
+          {activeTab === 'news' && isAdministrator(rank) && (
+            <div id="admin-panel-news" role="tabpanel" aria-label="News Management">
+              <NewsManagement />
+            </div>
+          )}
+          {activeTab === 'settings' && isAdministrator(rank) && (
+            <div id="admin-panel-settings" role="tabpanel" aria-label="Site Settings">
+              <SiteSettings />
+            </div>
+          )}
+        </div>
       </div>
     </Container>
   )
+}
+
+function tabClass(selected: boolean): string {
+  return selected
+    ? 'border-b-2 border-gold-500 px-4 py-3 text-sm font-medium uppercase tracking-wide text-gold-400'
+    : 'border-b-2 border-transparent px-4 py-3 text-sm font-medium uppercase tracking-wide text-text-secondary transition-colors hover:border-stone-500 hover:text-gold-400'
 }
