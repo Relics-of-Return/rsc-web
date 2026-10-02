@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/hooks/useAuth'
 import { SITE_NAME, SITE_TAGLINE } from '@/lib/constants'
+import { alagard } from '@/lib/fonts'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://127.0.0.1:3000'
 
@@ -49,7 +50,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
+    <html lang="en" className={`${alagard.variable} h-full antialiased`} suppressHydrationWarning>
       <body
         className="min-h-full flex flex-col bg-stone-950 text-text-primary font-body"
         suppressHydrationWarning
