@@ -91,6 +91,9 @@ const COMBAT_ANGLE = 15
 interface Animation {
   sprite: number
   overlay: number
+  // set on equipment that shows skin, as the Ironman platebody's bare arms
+  // do (rsc-client/scripts/export-avatar-sprites.js)
+  skin?: boolean
 }
 
 interface Shift {
@@ -332,7 +335,7 @@ async function drawSlot(
     image = colourizeSprite(image, sprite.width, sprite.height, animation.overlay, null)
   }
 
-  if (animation.sprite === FEMALE_PLATEBODY_SPRITE) {
+  if (animation.sprite === FEMALE_PLATEBODY_SPRITE || animation.skin) {
     image = colourizeSprite(image, sprite.width, sprite.height, null, skin)
   }
 
