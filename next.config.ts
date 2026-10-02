@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // the manager and the launcher open the site as 127.0.0.1:3000, which Next
+  // 16's dev server blocks the dev-only files (chunks, css, hot reload) for
+  // unless it's named. dev only: `next build` and `next start` ignore it
+  allowedDevOrigins: ['127.0.0.1', 'localhost'],
+
   // rsc-landscape pulls in node-canvas, which is a native module. it is only
   // ever touched from route handlers, so it has to stay a real require at
   // runtime rather than being bundled
@@ -34,6 +39,15 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // public, read-only data the game client's side panels read from its
+      // own origin (rsc-client's hiscores, market and news panels) - the
+      // same as /api/worlds and /api/settings already allow
+      ...['/api/hiscores', '/api/hiscores/:path*', '/api/tradepost', '/api/tradepost/:path*', '/api/news'].map(
+        (source) => ({
+          source,
+          headers: [{ key: 'Access-Control-Allow-Origin', value: '*' }],
+        }),
+      ),
     ];
   },
 };

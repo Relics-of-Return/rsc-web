@@ -5,6 +5,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { MessageChannel, Worker, receiveMessageOnPort } from 'node:worker_threads'
 
+import { readDefinitions } from '@/lib/definitions'
 import { encodeHei } from '@/lib/landscape/hei'
 import {
   OBJECT_BASE as OBJECT_OFFSET,
@@ -824,16 +825,14 @@ function saveLandscape(
   return { written, bytes }
 }
 
-/* eslint-disable @typescript-eslint/no-require-imports --
-   static requires, one per file, so the bundler can see exactly which
-   definitions this needs */
+// read from disk as they are now, so a save can place an object the model
+// editor added since rsc-web started
 const DEFINITIONS: Record<SpawnFile, () => Record<string, unknown>> = {
-  objects: () => require('@2003scape/rsc-data/config/objects.json'),
-  'wall-objects': () => require('@2003scape/rsc-data/config/wall-objects.json'),
-  npcs: () => require('@2003scape/rsc-data/config/npcs.json'),
-  items: () => require('@2003scape/rsc-data/config/items.json'),
+  objects: () => readDefinitions('objects') as unknown as Record<string, unknown>,
+  'wall-objects': () => readDefinitions('wall-objects') as unknown as Record<string, unknown>,
+  npcs: () => readDefinitions('npcs') as unknown as Record<string, unknown>,
+  items: () => readDefinitions('items') as unknown as Record<string, unknown>,
 }
-/* eslint-enable @typescript-eslint/no-require-imports */
 
 const SINGULAR: Record<SpawnFile, string> = {
   objects: 'object',
@@ -1046,6 +1045,26 @@ export function saveSectors(requests: SaveRequest[]): SaveResult {
 
     files.push(file)
     bytes += Buffer.byteLength(text)
+
+    // the client's HD graphics draw the scenery and doors past the region the
+    // server has sent from their own copy (rsc-client/scripts/copy-locations.js)
+    if (kind === 'objects' || kind === 'wall-objects') {
+      const clientFile = path.join(
+        /*turbopackIgnore: true*/ clientLandscapeDir(),
+        '..',
+        'locations',
+        `${kind}.json`,
+      )
+
+      if (fs.existsSync(/*turbopackIgnore: true*/ path.dirname(clientFile))) {
+        const compact = JSON.stringify(
+          (entries as PlacedObject[]).map(({ id, x, y, direction }) => ({ id, x, y, direction })),
+        )
+
+        writeAtomic(clientFile, compact)
+        files.push(clientFile)
+      }
+    }
   }
 
   return {
@@ -1083,6 +1102,22 @@ export type IssueKind =
 
 /** More than anyone reads; the counts stay exact beyond it. */
 const ISSUE_LIMIT = 3000
+
+/**
+ * Whether the server stops anyone stepping on an overlay: its own tile table
+ * (overlay n is tile n - 1) decides, which is not what the landscape
+ * library's says for mud floor and logs.
+ */
+function overlayWalkBlocked(
+  overlay: number,
+  fallback: Record<string, { blocked?: boolean }>,
+): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const serverTiles: { blocked?: boolean }[] = require('@2003scape/rsc-data/config/tiles')
+  const tile = serverTiles[overlay - 1]
+
+  return tile ? !!tile.blocked : !!fallback[String(overlay)]?.blocked
+}
 
 /**
  * Sweeps the whole world for the kinds of mistake an editor makes, or the
@@ -1197,7 +1232,7 @@ export function checkWorld(): { counts: Record<IssueKind, number>; issues: Issue
     const found = tileOf(x, y)
     const overlay = found?.tiles.overlay[found.index]
 
-    return !!overlay && !!tileOverlays[String(overlay)]?.blocked
+    return !!overlay && overlayWalkBlocked(overlay, tileOverlays)
   }
 
   const lists: [SpawnFile, Spawn[]][] = [

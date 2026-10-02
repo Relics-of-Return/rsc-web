@@ -1,11 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
+import { readDefinitions } from '@/lib/definitions'
 import { isRefusal, requireStaff } from '@/lib/landscape/auth'
 import type { LandscapePalette } from '@/lib/landscape/types'
 
 // Names and colours for everything the inspector can set: the 256 terrain
-// colours, the overlay table, and the object/wall-object names. Static for a
-// given build, but staff-gated like the rest of the editor.
+// colours, the overlay table, and the object/wall-object names. The names are
+// read from disk each time they change, so an object the model editor adds
+// shows up without a restart. Staff-gated like the rest of the editor.
 export const dynamic = 'force-dynamic'
 
 // the client's six roof definitions (config85.jag: GameData.roofHeight and
@@ -29,11 +31,16 @@ export async function GET(request: NextRequest) {
   /* eslint-disable @typescript-eslint/no-require-imports */
   const { tileOverlays } = require('@2003scape/rsc-landscape')
   const terrainColours = require('@2003scape/rsc-landscape/src/terrain-colours')
-  const objects = require('@2003scape/rsc-data/config/objects.json')
-  const wallObjects = require('@2003scape/rsc-data/config/wall-objects.json')
-  const npcs = require('@2003scape/rsc-data/config/npcs.json')
-  const items = require('@2003scape/rsc-data/config/items.json')
+  // what the server walks by: overlay n is its tile n - 1. the landscape
+  // library's own table disagrees for mud floor (and logs), which it calls
+  // walkable while the server won't let anyone onto it
+  const serverTiles: { blocked?: boolean }[] = require('@2003scape/rsc-data/config/tiles')
   /* eslint-enable @typescript-eslint/no-require-imports */
+  type Definition = Record<string, unknown> & { name?: string }
+  const objects = readDefinitions<Definition>('objects')
+  const wallObjects = readDefinitions<Definition>('wall-objects')
+  const npcs = readDefinitions<Definition>('npcs')
+  const items = readDefinitions<Definition>('items')
 
   const overlays: LandscapePalette['overlays'] = {}
 
@@ -41,11 +48,11 @@ export async function GET(request: NextRequest) {
     overlays[id] = {
       name: String(def.name ?? `overlay ${id}`),
       colour: String(def.colour ?? 'rgb(0, 0, 0)'),
-      blocked: !!def.blocked,
+      blocked: serverTiles[Number(id) - 1] ? !!serverTiles[Number(id) - 1].blocked : !!def.blocked,
     }
   }
 
-  const names = (table: Record<string, { name?: string }>) => {
+  const names = (table: Record<string, { name?: string }> | { name?: string }[]) => {
     const out: Record<string, string> = {}
 
     for (const [id, def] of Object.entries(table)) {
