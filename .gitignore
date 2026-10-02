@@ -24,5 +24,12 @@ yarn-error.log*
 .env*
 !.env.example
 
-# Default agent.md
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# launcher releases (rsc-tauri-client/scripts/publish-launcher.cjs)
+/downloads
+
+# Agents
 AGENTS.md
