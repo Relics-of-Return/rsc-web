@@ -6,6 +6,7 @@ import { newsCategoryStyle } from '@/data/news'
 import type { NewsArticleData } from '@/lib/types'
 import { fetchWwwJson } from '@/lib/www'
 import { NewsArticleHeader } from '@/components/news/NewsArticleHeader'
+import { NewsArticleBody } from '@/components/news/NewsArticleBody'
 
 interface ArticlePageProps {
   params: Promise<{ id: string }>
@@ -70,10 +71,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         <NewsArticleHeader article={article} />
 
         <article className="mt-8 rounded-lg border border-stone-700 bg-stone-800/60 p-8">
-          <div className="mt-6 space-y-4 text-text-secondary leading-relaxed">
-            {article.body.split(/\n{2,}/).map((paragraph, index) => (
-              <p key={index}>{paragraph}</p>
-            ))}
+          <div className="mt-6 text-text-secondary leading-relaxed">
+            <NewsArticleBody body={article.body} />
           </div>
           <p className="mt-10 text-xs text-text-muted">
             Published{' '}
