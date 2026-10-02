@@ -2,12 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { Button } from '@/components/ui/Button'
-import { CheckPanel } from '@/components/world-map/CheckPanel'
-import { ObjectList } from '@/components/world-map/ObjectList'
-import { ItemList, NpcList } from '@/components/world-map/SpawnList'
-import { TileInspector } from '@/components/world-map/TileInspector'
-import { ToolPanel } from '@/components/world-map/ToolPanel'
+
 import {
   DEFAULT_SETTINGS,
   LAYERS_FOR,
@@ -19,7 +14,6 @@ import {
 import {
   DEFAULT_LAYERS,
   WorldCanvas,
-  ZOOMS,
   footprint,
   type MapLayers,
   type MapView,
@@ -28,10 +22,18 @@ import {
   type TileArea,
 } from '@/components/world-map/WorldCanvas'
 import {
+  useRenderSettings,
   WorldPreview3D,
   type PreviewCamera,
   type PreviewHit,
+  type WorldPreviewController,
 } from '@/components/world-map/WorldPreview3D'
+import { WorldToolbar, type ViewLayoutMode } from '@/components/world-map/WorldToolbar'
+import { WorldDrawer, type InspectorTab } from '@/components/world-map/WorldDrawer'
+import { LightingPanel } from '@/components/world-map/LightingPanel'
+import { useLightingAreas } from '@/components/world-map/useLightingAreas'
+import { areaAt, rectOf } from '@/lib/landscape/lighting'
+import { SplitSquareVertical, X } from 'lucide-react'
 import {
   fetchJson,
   keyOf,
@@ -70,7 +72,6 @@ import {
   type TileEdit,
 } from '@/lib/landscape/types'
 import { cn } from '@/lib/utils'
-import { planeLabel } from '@/lib/world-map'
 
 /**
  * The world editor: scroll the map, shape the ground, paint it, build walls
@@ -91,9 +92,11 @@ const DEFAULT_GAME = { x: 120, y: 648 }
 
 const DEFAULT_ZOOM = 14
 
-const EMPTY = new Set<number>()
+// how long after the last packed archive changes the art is read again:
+// pack-cache writes three of them in a row
+const ART_SETTLE = 600
 
-type Tab = 'tile' | 'scenery' | 'doors' | 'npcs' | 'items'
+const EMPTY = new Set<number>()
 
 /** The middle of a sector, in game coordinates. */
 function middleOf(ref: { plane: number; x: number; y: number }) {
@@ -101,10 +104,6 @@ function middleOf(ref: { plane: number; x: number; y: number }) {
     x: (ref.x - MIN_REGION_X) * SECTOR_SIZE + SECTOR_SIZE / 2,
     y: (ref.y - MIN_REGION_Y) * SECTOR_SIZE + SECTOR_SIZE / 2 + ref.plane * PLANE_HEIGHT,
   }
-}
-
-function nameOf(ref: { plane: number; x: number; y: number }) {
-  return `m${ref.plane}${String(ref.x).padStart(2, '0')}${String(ref.y).padStart(2, '0')}`
 }
 
 /** A tile's sector, and where in it the tile is. */
@@ -197,7 +196,7 @@ export function WorldEditor() {
     sectors?: string[]
   } | null>(null)
 
-  const [tab, setTab] = useState<Tab>('tile')
+  const [tab, setTab] = useState<InspectorTab>('tile')
   const [tool, setTool] = useState<Tool>('objects')
   const [settings, setSettings] = useState<ToolSettings>(DEFAULT_SETTINGS)
   const [show, setShow] = useState<MapLayers>(DEFAULT_LAYERS)
@@ -207,7 +206,11 @@ export function WorldEditor() {
   const [pasting, setPasting] = useState(false)
   const [turn, setTurn] = useState<Turn>(NO_TURN)
 
-  const [goto, setGoto] = useState({ x: '', y: '' })
+  // HD graphics' lighting areas (the lighting tool), and the rectangle being
+  // dragged out for one
+  const lighting = useLightingAreas(tool === 'lighting' || show.lighting)
+  const [lightingDraft, setLightingDraft] = useState<TileArea | null>(null)
+
   const [thumbnail, setThumbnail] = useState<
     ((kind: 'object' | 'door', id: number) => string | null) | null
   >(null)
@@ -215,6 +218,34 @@ export function WorldEditor() {
   const update = useCallback((patch: Partial<ToolSettings>) => {
     setSettings((current) => ({ ...current, ...patch }))
   }, [])
+
+  // Studio UI states (osrs.world layout)
+  const [viewMode, setViewMode] = useState<ViewLayoutMode>('3d')
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [isDrawerPinned, setIsDrawerPinned] = useState(false)
+  const [roofs, setRoofs] = useState(true)
+  const [renderSettings, setRenderSettings] = useRenderSettings()
+  const [showPip, setShowPip] = useState(true)
+  const previewControllerRef = useRef<WorldPreviewController | null>(null)
+
+  // Fullscreen and drawer keyboard handling
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isDrawerOpen) {
+          setIsDrawerOpen(false)
+        } else if (isFullscreen) {
+          setIsFullscreen(false)
+        }
+      } else if (e.key === 'F11') {
+        e.preventDefault()
+        setIsFullscreen((prev) => !prev)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isDrawerOpen, isFullscreen])
 
   // ## the 3D view
 
@@ -229,6 +260,9 @@ export function WorldEditor() {
   const [camera, setCamera] = useState<PreviewCamera | null>(null)
   // bumped after a save, so the 3D view re-reads the saved maps
   const [mapsVersion, setMapsVersion] = useState(0)
+  // bumped when the game's art is packed again (the model editor's Pack, or
+  // pack-cache anywhere), so new objects and models show without a reload
+  const [artVersion, setArtVersion] = useState(0)
 
   const lookAt = useCallback((at: { x: number; y: number }) => {
     setFocus((last) => ({
@@ -329,6 +363,44 @@ export function WorldEditor() {
 
   // ## loading
 
+  // a pack rewrites the object table and the models: the catalog's names
+  // and the 3D view's art are read again once pack-cache is done writing
+  useEffect(() => {
+    const events = new EventSource('/api/models/events')
+    let timer: ReturnType<typeof setTimeout> | undefined
+
+    events.addEventListener('change', (event) => {
+      let change: { kind?: string }
+
+      try {
+        change = JSON.parse((event as MessageEvent).data)
+      } catch {
+        return
+      }
+
+      if (change.kind !== 'archive') {
+        return
+      }
+
+      clearTimeout(timer)
+      timer = setTimeout(() => {
+        fetchJson<LandscapePalette>('/api/landscape/palette')
+          .then((paletteData) => {
+            setPalette(paletteData)
+            setArtVersion((version) => version + 1)
+          })
+          .catch(() => {
+            // the next pack will try again
+          })
+      }, ART_SETTLE)
+    })
+
+    return () => {
+      clearTimeout(timer)
+      events.close()
+    }
+  }, [])
+
   // the palette and the sector list once, then the view from the url
   useEffect(() => {
     let cancelled = false
@@ -386,6 +458,34 @@ export function WorldEditor() {
     },
     [ensure, existing],
   )
+
+  // the 3D view furnishes sectors that aren't open from the world's spawns,
+  // but only an open sector can be edited, and the 2D map only opens the ones
+  // it shows (a small corner in the 3D layout, none with it closed): so the
+  // sectors around the 3D camera are opened as it moves
+  const cameraKeys = useMemo(() => {
+    if (!camera) {
+      return ''
+    }
+
+    const keys = new Set<SectorKey>()
+
+    for (let dx = -1; dx <= 1; dx += 1) {
+      for (let dy = -1; dy <= 1; dy += 1) {
+        keys.add(
+          keyOf(sectorOfGame(camera.x + dx * SECTOR_SIZE, camera.y + dy * SECTOR_SIZE)),
+        )
+      }
+    }
+
+    return [...keys].join(',')
+  }, [camera])
+
+  useEffect(() => {
+    if (cameraKeys) {
+      onVisible(cameraKeys.split(','))
+    }
+  }, [cameraKeys, onVisible])
 
   // the url names the sector in the middle of the map, so a reload, or a
   // link, comes back to it
@@ -450,7 +550,7 @@ export function WorldEditor() {
 
   const canvasMode: 'select' | 'paint' | 'area' = pasting
     ? 'paint'
-    : tool === 'area'
+    : tool === 'area' || tool === 'lighting'
       ? 'area'
       : placing
         ? 'paint'
@@ -1072,11 +1172,12 @@ export function WorldEditor() {
         return
       }
 
-      const toolIndex = /^F?([1-9])$/.exec(key)
+      const toolIndex = /^(?:[0-9]|F[1-9]|F10)$/.test(key) ? Number(key.replace('F', '')) : null
 
-      if (toolIndex && !event.altKey) {
+      if (toolIndex !== null && !event.altKey) {
         event.preventDefault()
-        chooseTool(TOOLS[Number(toolIndex[1]) - 1].id)
+        // 0 and F10 are the tenth
+        chooseTool(TOOLS[(toolIndex || 10) - 1].id)
         return
       }
 
@@ -1136,6 +1237,8 @@ export function WorldEditor() {
             update({ npcId: null })
           } else if (tool === 'items' && placing) {
             update({ itemId: null })
+          } else if (tool === 'lighting') {
+            lighting.select(null)
           } else {
             setArea(null)
           }
@@ -1364,6 +1467,10 @@ export function WorldEditor() {
   const pickInView = (hit: PreviewHit) => {
     const at = { x: hit.x, y: hit.y, alt: false, shift: false }
 
+    // what's drawn there may come from the world's spawns rather than an
+    // open sector; this opens it so it can be edited
+    onVisible([locate(hit).key])
+
     if (pasting || (canvasMode === 'paint' && pick === 'tile' && hit.kind === 'tile')) {
       pressAt(at)
       return
@@ -1388,7 +1495,7 @@ export function WorldEditor() {
     const sector = open.get(key)
 
     if (!sector) {
-      return `Ground · ${where}`
+      return `Ground${hit.ground ? ` · HD ${hit.ground}` : ''} · ${where}`
     }
 
     const overlay = sector.working.tiles.overlay[index]
@@ -1396,10 +1503,62 @@ export function WorldEditor() {
       ? (palette.overlays[String(overlay)]?.name ?? `overlay ${overlay}`)
       : 'Ground'
 
-    return `${surface} · height ${sector.working.tiles.elevation[index]} · ${where}`
+    const hd = hit.ground ? ` · HD ${hit.ground}` : ''
+
+    return `${surface} · height ${sector.working.tiles.elevation[index]}${hd} · ${where}`
   }
 
-  const zoomIndex = ZOOMS.indexOf(view.zoom as (typeof ZOOMS)[number])
+  // the lighting tool: a drag draws the picked area's rectangle, or a new
+  // area's if none is picked; a click picks the area there
+  const onMapArea = (next: TileArea) => (tool === 'lighting' ? setLightingDraft(next) : setArea(next))
+
+  const onMapRelease = () => {
+    const draft = lightingDraft
+
+    setLightingDraft(null)
+
+    if (tool !== 'lighting' || !draft || !lighting.areas) {
+      return
+    }
+
+    if (draft.width === 1 && draft.height === 1) {
+      const index = areaAt(lighting.areas, draft)
+
+      lighting.select(index === -1 ? null : index)
+    } else if (lighting.selected !== null) {
+      lighting.place(lighting.selected, draft, view.plane)
+    } else {
+      lighting.add(view.plane, draft)
+    }
+  }
+
+  const lightingRegions =
+    show.lighting && lighting.areas
+      ? lighting.areas.flatMap((entry, index) => {
+          const rect = rectOf(entry)
+
+          return rect && Math.floor(rect.y / PLANE_HEIGHT) === view.plane && !entry.closedIn
+            ? [{ area: rect, label: `${index + 1}. ${entry.name}`, selected: index === lighting.selected }]
+            : []
+        })
+      : undefined
+
+  const focusArea =
+    camera && lighting.areas
+      ? (lighting.areas[areaAt(lighting.areas, { x: Math.floor(camera.x), y: Math.floor(camera.y) })]
+          ?.name ?? null)
+      : null
+
+  const lightingPanel = (
+    <LightingPanel
+      lighting={lighting}
+      plane={view.plane}
+      focusArea={focusArea}
+      previewOn={renderSettings.lighting && renderSettings.place}
+      onPreview={() => setRenderSettings({ lighting: true, place: true })}
+      onGoTo={(at) => goTo(at)}
+    />
+  )
 
   const layerLabels: [keyof MapLayers, string][] = [
     ['heights', 'Heights'],
@@ -1412,463 +1571,424 @@ export function WorldEditor() {
     ['items', 'Items'],
     ['blocked', 'Blocked'],
     ['grid', 'Grid'],
+    ['lighting', 'Lighting areas'],
   ]
 
   return (
-    <div className="space-y-4">
-      {/* navigation */}
-      <div className="flex flex-wrap items-end gap-3 rounded border border-stone-700 bg-stone-900/60 p-3">
-        <label className="text-xs uppercase tracking-wide text-text-secondary">
-          Plane
-          <select
-            className="mt-1 block rounded border border-stone-700 bg-stone-900 px-2 py-1 text-sm text-text-primary"
-            value={view.plane}
-            onChange={(e) => {
-              const plane = Number(e.target.value)
-              const at = {
-                x: Math.floor(view.x),
-                y: Math.floor(view.y) + (plane - view.plane) * PLANE_HEIGHT,
-              }
-
-              goTo(at)
-            }}
-          >
-            {[0, 1, 2, 3].map((plane) => (
-              <option key={plane} value={plane}>
-                {planeLabel(plane)}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="text-xs uppercase tracking-wide text-text-secondary">
-          Sector
-          <select
-            className="mt-1 block rounded border border-stone-700 bg-stone-900 px-2 py-1 text-sm text-text-primary"
-            value={centreExists ? `${centreRef.x},${centreRef.y}` : ''}
-            onChange={(e) => {
-              const [x, y] = e.target.value.split(',').map(Number)
-              const middle = middleOf({ plane: view.plane, x, y })
-
-              goTo({ x: middle.x, y: middle.y })
-            }}
-          >
-            {!centreExists && <option value="">— nothing built here —</option>}
-            {planeSectors.map((s) => {
-              const minX = (s.x - MIN_REGION_X) * SECTOR_SIZE
-              const minY = (s.y - MIN_REGION_Y) * SECTOR_SIZE + s.plane * PLANE_HEIGHT
-
-              return (
-                <option key={s.name} value={`${s.x},${s.y}`}>
-                  {s.x},{s.y} — game {minX}–{minX + 47}, {minY}–{minY + 47}
-                  {s.members ? ' (members)' : ''}
-                </option>
-              )
-            })}
-          </select>
-        </label>
-
-        <div className="flex gap-1">
-          {neighbours.map((n) => (
-            <button
-              key={n.label}
-              type="button"
-              title={`A sector ${n.title}`}
-              onClick={() =>
-                goTo({
-                  x: Math.floor(view.x) + n.dx * SECTOR_SIZE,
-                  y: Math.floor(view.y) + n.dy * SECTOR_SIZE,
-                })
-              }
-              className="h-8 w-8 rounded border border-stone-700 bg-stone-800 text-sm text-text-primary hover:border-gold-500"
-            >
-              {n.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            title="Zoom out (-)"
-            disabled={zoomIndex <= 0}
-            onClick={() => setView({ ...view, zoom: ZOOMS[zoomIndex - 1] })}
-            className="h-8 w-8 rounded border border-stone-700 bg-stone-800 text-sm text-text-primary hover:border-gold-500 disabled:opacity-30"
-          >
-            −
-          </button>
-          <span className="w-12 text-center text-xs text-text-secondary">{view.zoom} px</span>
-          <button
-            type="button"
-            title="Zoom in (+)"
-            disabled={zoomIndex >= ZOOMS.length - 1}
-            onClick={() => setView({ ...view, zoom: ZOOMS[zoomIndex + 1] })}
-            className="h-8 w-8 rounded border border-stone-700 bg-stone-800 text-sm text-text-primary hover:border-gold-500 disabled:opacity-30"
-          >
-            +
-          </button>
-        </div>
-
-        <form
-          className="flex items-end gap-2"
-          onSubmit={(e) => {
-            e.preventDefault()
-
-            const x = Number.parseInt(goto.x, 10)
-            const y = Number.parseInt(goto.y, 10)
-
-            if (!Number.isFinite(x) || !Number.isFinite(y)) {
-              return
-            }
-
-            if (!existing.has(keyOf(sectorOfGame(x, y)))) {
-              setNotice({ kind: 'error', text: `Nothing is built at ${x}, ${y}.` })
-              return
-            }
-
-            setSelected({ x, y })
-            goTo({ x, y })
-          }}
-        >
-          <label className="text-xs uppercase tracking-wide text-text-secondary">
-            Go to game x, y
-            <span className="mt-1 flex gap-1">
-              <input
-                className="w-20 rounded border border-stone-700 bg-stone-900 px-2 py-1 text-sm text-text-primary"
-                inputMode="numeric"
-                placeholder="x"
-                value={goto.x}
-                onChange={(e) => setGoto((g) => ({ ...g, x: e.target.value }))}
-              />
-              <input
-                className="w-20 rounded border border-stone-700 bg-stone-900 px-2 py-1 text-sm text-text-primary"
-                inputMode="numeric"
-                placeholder="y"
-                value={goto.y}
-                onChange={(e) => setGoto((g) => ({ ...g, y: e.target.value }))}
-              />
-            </span>
-          </label>
-          <Button type="submit" size="sm" variant="outline">
-            Go
-          </Button>
-        </form>
-      </div>
-
+    <div
+      className={cn(
+        'relative w-full transition-all duration-300 select-none font-sans',
+        isFullscreen
+          ? 'fixed inset-0 z-50 h-screen w-screen bg-[#07080b] flex flex-col'
+          : 'h-[calc(100vh-10rem)] min-h-[720px] rounded-2xl overflow-hidden border border-white/10 bg-[#07080b] shadow-[0_16px_50px_rgba(0,0,0,0.85)] flex flex-col',
+      )}
+    >
+      {/* Floating Notice Toast */}
       {notice && (
         <div
           className={cn(
-            'rounded border p-3 text-sm',
-            notice.kind === 'ok' && 'border-emerald-700 bg-emerald-950/40 text-emerald-200',
-            notice.kind === 'error' && 'border-red-800 bg-red-950/40 text-red-300',
-            notice.kind === 'conflict' && 'border-amber-700 bg-amber-950/40 text-amber-200',
+            'absolute top-4 inset-x-0 mx-auto w-fit max-w-xl z-50 flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium backdrop-blur-xl shadow-2xl transition-all animate-in fade-in slide-in-from-top-2',
+            notice.kind === 'ok' && 'border border-emerald-500/40 bg-emerald-950/85 text-emerald-200',
+            notice.kind === 'error' && 'border border-red-500/40 bg-red-950/85 text-red-200',
+            notice.kind === 'conflict' && 'border border-amber-500/40 bg-amber-950/85 text-amber-200',
           )}
         >
-          {notice.text}
+          <span>{notice.text}</span>
           {notice.kind === 'conflict' && notice.sectors?.length ? (
             <button
               type="button"
-              className="ml-2 underline"
+              className="ml-2 font-bold underline hover:text-white"
               onClick={() => {
                 const names = new Set(notice.sectors)
                 const keys = [...open.values()]
                   .filter((s) => names.has(s.loaded.name))
                   .map((s) => keyOf(s.loaded))
-
                 if (
                   window.confirm(
-                    `Reloading ${notice.sectors!.join(', ')} throws away your unsaved changes there. Continue?`,
+                    `Reloading ${notice.sectors!.join(', ')} throws away your unsaved changes. Continue?`,
                   )
                 ) {
-                  edits
-                    .reload(keys)
-                    .then(() => setNotice(null))
-                    .catch((error) =>
-                      setNotice({
-                        kind: 'error',
-                        text: error instanceof Error ? error.message : 'could not reload',
-                      }),
-                    )
+                  edits.reload(keys).then(() => setNotice(null))
                 }
               }}
             >
-              Reload {notice.sectors.length === 1 ? 'it' : 'them'}
+              Reload
             </button>
           ) : null}
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            className="ml-2 rounded p-0.5 hover:bg-white/10 text-stone-400 hover:text-white"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
         </div>
       )}
 
-      {/* the tools */}
-      <div className="flex flex-wrap items-center gap-2 rounded border border-stone-700 bg-stone-900/60 p-2">
-        <div className="flex flex-wrap gap-1" role="toolbar" aria-label="Tools">
-          {TOOLS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              title={`${t.hint} (${t.key} or F${t.key})`}
-              aria-pressed={tool === t.id}
-              onClick={() => chooseTool(t.id)}
-              className={cn(
-                'rounded border px-2 py-1 text-xs uppercase tracking-wide',
-                tool === t.id
-                  ? 'border-gold-500 bg-gold-500 text-stone-950'
-                  : 'border-stone-700 bg-stone-800 text-text-secondary hover:text-text-primary',
-              )}
-            >
-              <span className="mr-1 opacity-60">{t.key}</span>
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        <details className="relative">
-          <summary className="cursor-pointer select-none rounded border border-stone-700 bg-stone-800 px-2 py-1 text-xs uppercase tracking-wide text-text-secondary hover:text-text-primary">
-            Layers
-          </summary>
-          <div className="absolute z-20 mt-1 grid w-48 grid-cols-2 gap-1 rounded border border-stone-700 bg-stone-900 p-2 text-xs text-text-secondary shadow-lg">
-            {layerLabels.map(([layer, label]) => (
-              <label key={layer} className="flex items-center gap-1.5">
-                <input
-                  type="checkbox"
-                  className="accent-gold-500"
-                  checked={show[layer]}
-                  onChange={(e) => setShow((s) => ({ ...s, [layer]: e.target.checked }))}
-                />
-                {label}
-              </label>
-            ))}
-          </div>
-        </details>
-
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="outline" disabled={!edits.canUndo} onClick={undo}>
-            Undo{edits.canUndo ? ` (${edits.canUndo})` : ''}
-          </Button>
-          <Button size="sm" variant="outline" disabled={!edits.canRedo} onClick={redo}>
-            Redo{edits.canRedo ? ` (${edits.canRedo})` : ''}
-          </Button>
-          <Button size="sm" variant="outline" disabled={!dirty || busy !== null} onClick={edits.discard}>
-            Discard
-          </Button>
-          <Button size="sm" disabled={!dirty || busy !== null} onClick={save}>
-            {busy === 'saving' ? 'Saving…' : 'Save'}
-          </Button>
-        </div>
-      </div>
-
-      {/*
-        the map, the game's view and the inspector: three columns on a wide
-        screen; on a narrower one the view goes under the map
-      */}
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)_20rem]">
-        {/* the map */}
-        <div className="min-w-0 space-y-2 lg:col-start-1 lg:row-start-1">
-          <p role="status" className="text-xs text-text-secondary">
-            {centreExists ? nameOf(centreRef) : 'open sea'}
-            {centreMembers ? ' · members' : ''}
-            {dirty
-              ? ` · ${summary.tiles} tile${summary.tiles === 1 ? '' : 's'}` +
-                summary.spawns.map((s) => ` + ${s}`).join('') +
-                ' unsaved' +
-                (summary.sectors > 1 ? ` in ${summary.sectors} sectors` : '')
-              : ''}
-          </p>
-
-          <WorldCanvas
-            view={view}
-            onView={setView}
-            layers={layers}
-            show={show}
-            loading={edits.pending}
-            exists={exists}
-            palette={palette}
-            selected={selected}
-            camera={camera}
-            mode={canvasMode}
-            pick={pick}
-            brush={brushed && !pasting ? { size: settings.size, round: settings.round } : undefined}
-            repeat={
-              tool === 'height' && ['raise', 'lower', 'smooth'].includes(settings.heightAction)
-                ? 120
-                : undefined
-            }
-            area={tool === 'area' ? area : null}
-            stamp={stampArea}
-            boxes={npcsHere}
-            onVisible={onVisible}
-            onPress={pressAt}
-            onDrag={dragAt}
-            onArea={setArea}
-            onHover={setHover}
-          />
-
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-text-secondary">
-            <span>
-              {hover ? `${hover.x}, ${hover.y}` : 'hover a tile'}
-              {hoverHeight !== null ? ` · height ${hoverHeight}` : ''}
-              {hoverNames.length ? ` · ${hoverNames.join(', ')}` : ''}
-            </span>
-            <span><span className="text-[#e8d9a0]">━</span> wall</span>
-            <span><span className="text-[#c9a227]">╱</span> diagonal</span>
-            <span><span className="text-[#7ad1ff]">●</span> scenery</span>
-            <span><span className="text-[#ff9d3c]">━</span> door</span>
-            <span><span className="text-[#ff5cf0]">◆</span> NPC</span>
-            <span><span className="text-[#ffe14d]">■</span> item</span>
-            <span><span className="text-[#ff5c5c]">□</span> unsaved</span>
-            <span><span className="text-white">◆</span> 3D camera</span>
-          </div>
-          <p className="text-[11px] text-text-secondary/80">
-            1–9 or F1–F9 pick a tool. Right-drag scrolls (so does dragging when
-            selecting), the wheel zooms, PageUp/PageDown change floor. Alt+click
-            takes what is under the pointer. [ ] size the brush, {'{ }'} its
-            strength. Ctrl+Z undoes, Ctrl+Y redoes.
-          </p>
-        </div>
-
-        {/* what the game draws */}
-        <div className="min-w-0 lg:col-start-1 lg:row-start-2 2xl:col-start-2 2xl:row-start-1">
-          <WorldPreview3D
-            sectors={preview.sectors}
-            objects={preview.objects}
-            wallObjects={preview.wallObjects}
-            focus={focus}
-            selected={selected}
-            mapsVersion={mapsVersion}
-            describe={describeInView}
-            onPick={pickInView}
-            onCamera={setCamera}
-            onThumbnails={(draw) => setThumbnail(() => draw)}
-          />
-        </div>
-
-        {/* the tool, the selected tile, and the checker */}
-        <aside className="w-full space-y-3 lg:col-start-2 lg:row-span-2 lg:row-start-1 2xl:col-start-3 2xl:row-span-1">
-          <section className="space-y-2 rounded border border-stone-700 bg-stone-900/60 p-3" aria-label="Tool">
-            <h3 className="text-xs uppercase tracking-wide text-gold-400">
-              {TOOLS.find((t) => t.id === tool)?.label}
-              <span className="ml-2 normal-case tracking-normal text-text-secondary">
-                {TOOLS.find((t) => t.id === tool)?.hint}
-              </span>
-            </h3>
-            <ToolPanel
-              tool={tool}
-              settings={settings}
-              update={update}
-              palette={palette}
-              thumbnail={thumbnail}
-              area={area}
-              clip={clip}
-              pasting={pasting}
-              onCopy={copy}
-              onPaste={startPaste}
-              onTurn={doTurn}
-              onClearArea={() => area && clearArea(area)}
+      {/* Main Workspace (Canvas Area) */}
+      <div
+        className={cn(
+          'relative flex-1 w-full h-full overflow-hidden transition-all duration-300',
+          isDrawerOpen && isDrawerPinned && 'pr-[380px]',
+        )}
+      >
+        {/* VIEW MODE: 3D HERO VIEW (Directly inspired by osrs.world) */}
+        {viewMode === '3d' && (
+          <div className="relative h-full w-full">
+            <WorldPreview3D
+              sectors={preview.sectors}
+              objects={preview.objects}
+              wallObjects={preview.wallObjects}
+              focus={focus}
+              selected={selected}
+              mapsVersion={mapsVersion}
+              artVersion={artVersion}
+              describe={describeInView}
+              onPick={pickInView}
+              onCamera={setCamera}
+              onThumbnails={(draw) => setThumbnail(() => draw)}
+              controllerRef={previewControllerRef}
+              roofs={roofs}
+              onRoofsChange={setRoofs}
+              render={renderSettings}
+              lightingAreas={lighting.areas}
+              onOpenNav={() => setIsDrawerOpen(true)}
+              className="h-full w-full"
             />
-          </section>
 
-          <section className="space-y-3 rounded border border-stone-700 bg-stone-900/60 p-3" aria-label="Selected tile">
-            {!selection ? (
-              <p className="text-sm text-text-secondary">
-                Click a tile with the Objects tool (1) to inspect it.
-              </p>
-            ) : !selectedSector ? (
-              <p className="text-sm text-text-secondary">
-                {existing.has(selection.key)
-                  ? 'Loading this tile…'
-                  : `Nothing is built at ${selected!.x}, ${selected!.y}.`}
-              </p>
-            ) : (
-              <>
-                <div className="flex flex-wrap gap-1">
-                  {(
-                    [
-                      ['tile', 'Tile'],
-                      ['scenery', `Scenery (${sceneryHere.length})`],
-                      ['doors', `Doors (${doorsHere.length})`],
-                      ['npcs', `NPCs (${npcsHere.length})`],
-                      ['items', `Items (${itemsHere.length})`],
-                    ] as const
-                  ).map(([value, label]) => (
+            {/* Floating 2D PiP mini-window in 3D Mode */}
+            {showPip && (
+              <div className="absolute bottom-18 right-4 z-20 flex flex-col rounded-xl overflow-hidden border border-white/15 bg-[#0e1017]/95 shadow-[0_12px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl transition-all">
+                <div className="flex h-7 items-center justify-between px-2.5 bg-white/5 border-b border-white/10 text-[10px] text-stone-300">
+                  <div className="flex items-center gap-1.5 truncate pr-2">
+                    <span className="font-mono uppercase tracking-wider text-gold-400">
+                      2D Grid
+                    </span>
+                    {hover && (
+                      <span className="font-mono text-[9px] text-stone-400 truncate max-w-[130px]">
+                        {hover.x},{hover.y}
+                        {hoverHeight !== null ? ` · h${hoverHeight}` : ''}
+                        {hoverNames.length ? ` · ${hoverNames[0]}` : ''}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
                     <button
-                      key={value}
                       type="button"
-                      onClick={() => setTab(value)}
-                      className={cn(
-                        'flex-1 rounded px-1.5 py-1 text-[11px] uppercase tracking-wide',
-                        tab === value
-                          ? 'bg-stone-700 text-gold-400'
-                          : 'text-text-secondary hover:text-text-primary',
-                      )}
+                      onClick={() => setViewMode('split')}
+                      title="Expand to Split View"
+                      className="hover:text-white p-0.5 text-stone-400"
                     >
-                      {label}
+                      <SplitSquareVertical className="h-3 w-3" />
                     </button>
-                  ))}
+                    <button
+                      type="button"
+                      onClick={() => setShowPip(false)}
+                      title="Close Mini-Grid"
+                      className="hover:text-white p-0.5 text-stone-400"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
                 </div>
-
-                {tab === 'tile' && (
-                  <TileInspector
-                    tile={tileEdit(selectedSector.working.tiles, selection.index)}
+                <div className="h-44 w-60 sm:h-52 sm:w-72 overflow-hidden bg-[#090a0f]">
+                  <WorldCanvas
+                    view={view}
+                    onView={setView}
+                    layers={layers}
+                    show={show}
+                    loading={edits.pending}
+                    exists={exists}
                     palette={palette}
-                    sector={selection.ref}
-                    onChange={setTile}
+                    selected={selected}
+                    camera={camera}
+                    mode={canvasMode}
+                    pick={pick}
+                    brush={
+                      brushed && !pasting
+                        ? { size: settings.size, round: settings.round }
+                        : undefined
+                    }
+                    repeat={
+                      tool === 'height' &&
+                      ['raise', 'lower', 'smooth'].includes(settings.heightAction)
+                        ? 120
+                        : undefined
+                    }
+                    area={tool === 'area' ? area : tool === 'lighting' ? lightingDraft : null}
+                    regions={lightingRegions}
+                    stamp={stampArea}
+                    boxes={npcsHere}
+                    onVisible={onVisible}
+                    onPress={pressAt}
+                    onDrag={dragAt}
+                    onArea={onMapArea}
+                    onRelease={onMapRelease}
+                    onHover={setHover}
                   />
-                )}
-
-                {tab === 'scenery' && selected && (
-                  <ObjectList
-                    kind="scenery"
-                    names={palette.objects}
-                    entries={sceneryHere}
-                    at={selected}
-                    tileFacing={selectedSector.working.tiles.direction[selection.index]}
-                    onChange={(next) => setOnTile('objects', next)}
-                  />
-                )}
-
-                {tab === 'doors' && selected && (
-                  <ObjectList
-                    kind="doors"
-                    names={palette.wallObjects}
-                    entries={doorsHere}
-                    at={selected}
-                    onChange={(next) => setOnTile('wallObjects', next)}
-                  />
-                )}
-
-                {tab === 'npcs' && (
-                  <NpcList
-                    names={palette.npcs}
-                    entries={npcsHere}
-                    onChange={(next) => setOnTile('npcs', next)}
-                  />
-                )}
-
-                {tab === 'items' && (
-                  <ItemList
-                    names={palette.items}
-                    entries={itemsHere}
-                    onChange={(next) => setOnTile('items', next)}
-                  />
-                )}
-              </>
+                </div>
+              </div>
             )}
-          </section>
+            {!showPip && (
+              <button
+                type="button"
+                onClick={() => setShowPip(true)}
+                title="Show 2D Blueprint Grid"
+                className="absolute bottom-18 right-4 z-20 rounded-xl border border-white/10 bg-stone-900/80 px-2.5 py-1 text-[11px] font-medium text-stone-300 backdrop-blur-md hover:border-gold-500/50 hover:text-white shadow-lg transition-all"
+              >
+                Show 2D Grid
+              </button>
+            )}
+          </div>
+        )}
 
-          <details className="rounded border border-stone-700 bg-stone-900/60 p-3">
-            <summary className="cursor-pointer text-xs uppercase tracking-wide text-gold-400">
-              Check the world
-            </summary>
-            <div className="mt-2">
-              <CheckPanel
-                onGo={(at) => {
-                  setSelected({ x: at.x, y: at.y })
-                  goTo(at)
-                }}
-                onFixFacing={fixFacing}
+        {/* VIEW MODE: SPLIT STUDIO (Side-by-side) */}
+        {viewMode === 'split' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 h-full w-full divide-y md:divide-y-0 md:divide-x divide-white/10">
+            {/* 2D Grid side */}
+            <div className="relative h-full w-full overflow-hidden bg-[#090a0f]">
+              <WorldCanvas
+                view={view}
+                onView={setView}
+                layers={layers}
+                show={show}
+                loading={edits.pending}
+                exists={exists}
+                palette={palette}
+                selected={selected}
+                camera={camera}
+                mode={canvasMode}
+                pick={pick}
+                brush={
+                  brushed && !pasting ? { size: settings.size, round: settings.round } : undefined
+                }
+                repeat={
+                  tool === 'height' && ['raise', 'lower', 'smooth'].includes(settings.heightAction)
+                    ? 120
+                    : undefined
+                }
+                area={tool === 'area' ? area : tool === 'lighting' ? lightingDraft : null}
+                regions={lightingRegions}
+                stamp={stampArea}
+                boxes={npcsHere}
+                onVisible={onVisible}
+                onPress={pressAt}
+                onDrag={dragAt}
+                onArea={onMapArea}
+                onRelease={onMapRelease}
+                onHover={setHover}
+              />
+              <div className="absolute top-3 left-3 rounded-lg bg-black/70 px-2.5 py-1 text-[10px] font-mono text-stone-300 backdrop-blur-md border border-white/10 pointer-events-none">
+                2D Grid{' '}
+                {hover
+                  ? `· ${hover.x}, ${hover.y}${hoverHeight !== null ? ` · elev ${hoverHeight}` : ''}${hoverNames.length ? ` · ${hoverNames[0]}` : ''}`
+                  : ''}
+              </div>
+            </div>
+
+            {/* 3D Preview side */}
+            <div className="relative h-full w-full overflow-hidden bg-black">
+              <WorldPreview3D
+                sectors={preview.sectors}
+                objects={preview.objects}
+                wallObjects={preview.wallObjects}
+                focus={focus}
+                selected={selected}
+                mapsVersion={mapsVersion}
+                artVersion={artVersion}
+                describe={describeInView}
+                onPick={pickInView}
+                onCamera={setCamera}
+                onThumbnails={(draw) => setThumbnail(() => draw)}
+                controllerRef={previewControllerRef}
+                roofs={roofs}
+                onRoofsChange={setRoofs}
+                render={renderSettings}
+                lightingAreas={lighting.areas}
+                onOpenNav={() => setIsDrawerOpen(true)}
+                className="h-full w-full"
               />
             </div>
-          </details>
-        </aside>
+          </div>
+        )}
+
+        {/* VIEW MODE: 2D BLUEPRINT */}
+        {viewMode === '2d' && (
+          <div className="relative h-full w-full overflow-hidden bg-[#090a0f]">
+            <WorldCanvas
+              view={view}
+              onView={setView}
+              layers={layers}
+              show={show}
+              loading={edits.pending}
+              exists={exists}
+              palette={palette}
+              selected={selected}
+              camera={camera}
+              mode={canvasMode}
+              pick={pick}
+              brush={
+                brushed && !pasting ? { size: settings.size, round: settings.round } : undefined
+              }
+              repeat={
+                tool === 'height' && ['raise', 'lower', 'smooth'].includes(settings.heightAction)
+                  ? 120
+                  : undefined
+              }
+              area={tool === 'area' ? area : tool === 'lighting' ? lightingDraft : null}
+              regions={lightingRegions}
+              stamp={stampArea}
+              boxes={npcsHere}
+              onVisible={onVisible}
+              onPress={pressAt}
+              onDrag={dragAt}
+              onArea={onMapArea}
+              onRelease={onMapRelease}
+              onHover={setHover}
+            />
+
+            {/* Floating 3D PiP in 2D mode */}
+            {showPip && (
+              <div className="absolute bottom-18 right-4 z-20 flex flex-col rounded-xl overflow-hidden border border-white/15 bg-black/95 shadow-[0_12px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl transition-all">
+                <div className="flex h-7 items-center justify-between px-2.5 bg-white/5 border-b border-white/10 text-[10px] text-stone-300">
+                  <span className="font-mono uppercase tracking-wider text-gold-400">
+                    3D View Preview
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('split')}
+                      title="Expand to Split View"
+                      className="hover:text-white p-0.5 text-stone-400"
+                    >
+                      <SplitSquareVertical className="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPip(false)}
+                      title="Close 3D Preview"
+                      className="hover:text-white p-0.5 text-stone-400"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+                <div className="h-44 w-60 sm:h-52 sm:w-72 overflow-hidden bg-black">
+                  <WorldPreview3D
+                    sectors={preview.sectors}
+                    objects={preview.objects}
+                    wallObjects={preview.wallObjects}
+                    focus={focus}
+                    selected={selected}
+                    mapsVersion={mapsVersion}
+                    artVersion={artVersion}
+                    describe={describeInView}
+                    onPick={pickInView}
+                    onCamera={setCamera}
+                    onThumbnails={(draw) => setThumbnail(() => draw)}
+                    controllerRef={previewControllerRef}
+                    roofs={roofs}
+                    onRoofsChange={setRoofs}
+                    render={renderSettings}
+                    lightingAreas={lighting.areas}
+                    showMinimap={false}
+                    className="h-full w-full"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Floating Bottom HUD Action Bar */}
+        <div className="absolute bottom-4 inset-x-0 mx-auto w-fit z-30 pointer-events-none">
+          <WorldToolbar
+            tool={tool}
+            onSelectTool={chooseTool}
+            settings={settings}
+            onUpdateSettings={update}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
+            canUndo={edits.canUndo}
+            canRedo={edits.canRedo}
+            onUndo={undo}
+            onRedo={redo}
+            dirty={dirty}
+            unsavedCount={summary.tiles + summary.spawns.length}
+            busy={busy}
+            onSave={save}
+            onDiscard={edits.discard}
+          />
+        </div>
+
+        {/* Floating Slide-Out Drawer Panel (Exact osrs.world style) */}
+        <WorldDrawer
+          isOpen={isDrawerOpen}
+          onToggleOpen={() => setIsDrawerOpen(!isDrawerOpen)}
+          isPinned={isDrawerPinned}
+          onTogglePinned={() => setIsDrawerPinned(!isDrawerPinned)}
+          camera={camera ?? undefined}
+          previewController={previewControllerRef}
+          roofs={roofs}
+          onRoofsChange={setRoofs}
+          renderSettings={renderSettings}
+          onRenderSettingsChange={setRenderSettings}
+          plane={view.plane}
+          onPlaneChange={(p) => {
+            const at = {
+              x: Math.floor(view.x),
+              y: Math.floor(view.y) + (p - view.plane) * PLANE_HEIGHT,
+            }
+            goTo(at)
+          }}
+          planeSectors={planeSectors}
+          centreRef={centreRef}
+          centreExists={centreExists}
+          centreMembers={centreMembers}
+          onGoTo={goTo}
+          neighbours={neighbours}
+          tool={tool}
+          settings={settings}
+          onUpdateSettings={update}
+          palette={palette}
+          thumbnail={thumbnail}
+          area={area}
+          clip={clip}
+          pasting={pasting}
+          onCopyArea={copy}
+          onPasteArea={startPaste}
+          onTurnArea={doTurn}
+          onClearArea={() => area && clearArea(area)}
+          lightingPanel={lightingPanel}
+          selected={selected}
+          selectedSectorExists={!!selectedSector}
+          tileEditData={
+            selectedSector && selection
+              ? tileEdit(selectedSector.working.tiles, selection.index)
+              : null
+          }
+          onTileChange={setTile}
+          sceneryHere={sceneryHere}
+          doorsHere={doorsHere}
+          npcsHere={npcsHere}
+          itemsHere={itemsHere}
+          tileFacing={
+            selectedSector && selection
+              ? selectedSector.working.tiles.direction[selection.index]
+              : undefined
+          }
+          onSetOnTile={setOnTile}
+          inspectorTab={tab}
+          onInspectorTabChange={setTab}
+          showLayers={show}
+          onUpdateLayers={setShow}
+          layerLabels={layerLabels}
+          onFixFacing={fixFacing}
+          dirty={dirty}
+          onSave={save}
+        />
       </div>
     </div>
   )

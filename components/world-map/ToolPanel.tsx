@@ -40,6 +40,8 @@ interface ToolPanelProps {
   onPaste: () => void
   onTurn: (how: 'rotate' | 'mirror' | 'flip') => void
   onClearArea: () => void
+  /** The lighting tool's panel (LightingPanel), made by the editor. */
+  lighting?: React.ReactNode
 }
 
 function Choice<T extends string | number>({
@@ -486,5 +488,8 @@ export function ToolPanel(props: ToolPanelProps) {
           </fieldset>
         </div>
       )
+
+    case 'lighting':
+      return <>{props.lighting ?? null}</>
   }
 }

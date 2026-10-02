@@ -2,13 +2,19 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { CircularMinimap } from '@/components/world-map/CircularMinimap'
+import type { LightingArea } from '@/lib/landscape/lighting'
 import type { PlacedObject, SectorTiles } from '@/lib/landscape/types'
+import { cn } from '@/lib/utils'
 
 /**
- * The live 3D view: the game client's own renderer (rsc-client's
+ * The live 3D view: the game client's own world (rsc-client's
  * src/editor/world-preview.js), fed the editor's working copy. What it draws
  * is what a player standing there would see — the same meshes, textures,
- * models and quirks — so an edit can be judged before anything is saved.
+ * models and lighting — so an edit can be judged before anything is saved.
+ * The GPU draws it, at the screen's own resolution and as far out as the
+ * draw distance reaches: the world around is built block by block in the
+ * background, nearest first, and fades into the sky where it runs out.
  *
  * Drag to orbit, right-drag or shift-drag to pan, scroll to zoom; with the
  * view focused, the arrow keys pan, Q/E turn and +/- zoom. Click to select
@@ -25,6 +31,8 @@ export interface PreviewHit {
   /** The footprint, in tiles — more than one for large scenery. */
   width: number
   height: number
+  /** A tile's HD ground material (rsc-client/assets/hd/ground.json), or 'natural'. */
+  ground?: string | null
 }
 
 /** Where the camera looks: x.5 is the middle of a tile. */
@@ -37,9 +45,125 @@ export interface PreviewCamera {
   distance: number
 }
 
+/** How the view is drawn — kept per browser, not per map. */
+export interface RenderSettings {
+  /** Tiles from the camera's focus the world is drawn to. */
+  drawDistance: number
+  /** Whether the far edge fades into the sky or stops. */
+  fog: boolean
+  sky: 'day' | 'dusk' | 'night' | 'classic'
+  brightness: number
+  /** Old school's ground textures on grass and dirt, and moving water. */
+  ground: boolean
+  /** HD graphics' Enhanced lighting: the sky setting's sun, lighting the world again. */
+  lighting: boolean
+  /** The sun's shadows with Enhanced lighting: 0 off, 1 low to 3 high. */
+  shadows: number
+  /**
+   * With Enhanced lighting, the light of the lighting area looked at (the
+   * Wilderness's haze, the desert's glare), as the game has it there.
+   */
+  place: boolean
+  /** The world mirrored in the water, with Enhanced lighting. */
+  reflections: boolean
+  /** The ground's colours blended across tiles, as old school's are. */
+  groundBlend: boolean
+  /** 0 none, 1 winter, 2 autumn. */
+  season: number
+  /** 0 off, 1 soft, 2 ACES. */
+  toneMapping: number
+  /** Bloom's strength, 0 off. */
+  bloom: number
+  /** The drawing buffer against the screen's pixels: below 1 is faster. */
+  resolution: number
+}
+
+export const DEFAULT_RENDER_SETTINGS: RenderSettings = {
+  drawDistance: 128,
+  fog: true,
+  sky: 'day',
+  brightness: 1,
+  ground: true,
+  lighting: false,
+  shadows: 2,
+  place: true,
+  reflections: true,
+  groundBlend: false,
+  season: 0,
+  toneMapping: 0,
+  bloom: 0,
+  resolution: 1,
+}
+
+export const DRAW_DISTANCE_MIN = 24
+export const DRAW_DISTANCE_MAX = 256
+
+const RENDER_STORAGE_KEY = 'world-editor:render'
+
+/** The view's render settings, remembered in this browser. */
+export function useRenderSettings(): [RenderSettings, (patch: Partial<RenderSettings>) => void] {
+  // the editor only renders once the login is known, so never on the server
+  const [settings, setSettings] = useState<RenderSettings>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(RENDER_STORAGE_KEY) ?? 'null')
+
+      if (saved && typeof saved === 'object') {
+        return { ...DEFAULT_RENDER_SETTINGS, ...saved }
+      }
+    } catch {
+      // nothing saved, or storage is off - the defaults do
+    }
+
+    return DEFAULT_RENDER_SETTINGS
+  })
+
+  const update = useCallback((patch: Partial<RenderSettings>) => {
+    setSettings((current) => {
+      const next = { ...current, ...patch }
+
+      try {
+        localStorage.setItem(RENDER_STORAGE_KEY, JSON.stringify(next))
+      } catch {
+        // not remembered, but still applied
+      }
+
+      return next
+    })
+  }, [])
+
+  return [settings, update]
+}
+
+/** How far along the world around the focus is. */
+export interface PreviewProgress {
+  built: number
+  total: number
+  building: number
+}
+
+export interface WorldPreviewController {
+  yaw: number
+  pitch: number
+  distance: number
+  roofs: boolean
+  setYaw: (yaw: number) => void
+  setPitch: (pitch: number) => void
+  setDistance: (distance: number) => void
+  setRoofs: (roofs: boolean) => void
+  resetNorth: () => void
+  resetView: () => void
+  lookAt: (x: number, y: number) => void
+}
+
 interface PreviewInstance {
   load(fetchArchive: (name: string) => Promise<ArrayBuffer>): Promise<void>
+  destroy(): void
+  setSettings(settings: Partial<RenderSettings>): RenderSettings
+  resize(width: number, height: number, pixelRatio: number): void
+  progress(): PreviewProgress
+  onUpdate: ((progress: PreviewProgress) => void) | null
   reloadMaps(fetchArchive: (name: string) => Promise<ArrayBuffer>): Promise<void>
+  reloadArt(fetchArchive: (name: string) => Promise<ArrayBuffer>): Promise<void>
   setSector(ref: { plane: number; x: number; y: number }, tiles: SectorTiles): void
   clearSectors(): void
   setObjects(objects: PlacedObject[]): void
@@ -56,6 +180,8 @@ interface PreviewInstance {
   camera(): PreviewCamera
   bounds(): { plane: number; minX: number; minY: number; maxX: number; maxY: number }
   thumbnail(kind: 'object' | 'door', id: number): string | null
+  /** Lighting areas to light the view by in place of the client's own; null for its own. */
+  setEnvironments?(patch: { areas: LightingArea[] } | null): void
   yaw: number
   pitch: number
   distance: number
@@ -63,7 +189,7 @@ interface PreviewInstance {
 
 type PreviewConstructor = new (
   canvas: HTMLCanvasElement,
-  options?: { members?: boolean },
+  options?: { members?: boolean; overlay?: HTMLCanvasElement | null },
 ) => PreviewInstance
 
 declare global {
@@ -115,22 +241,17 @@ async function fetchArchive(name: string): Promise<ArrayBuffer> {
   return response.arrayBuffer()
 }
 
-// internal resolution: the renderer is software, so its cost is per pixel.
-// CSS scales it to the column
-const WIDTH = 640
-const HEIGHT = 420
-
 // mudclient looks down at 912; the editor lets you tip from nearly
 // top-down to nearly level
 const PITCH_MIN = 780
 const PITCH_MAX = 1010
 const DISTANCE_MIN = 400
-const DISTANCE_MAX = 6000
+export const DISTANCE_MAX = 12000
 
 const DEFAULT_VIEW = { yaw: 0, pitch: 912, distance: 1500 }
 
-// how long an edit has to settle before the region is rebuilt - a rebuild
-// is a full reload of 2x2 sectors, about 80ms
+// how long an edit has to settle before the blocks it touches are rebuilt -
+// each is a load of 2x2 sectors, about 50ms on a worker
 const REBUILD_DELAY = 150
 
 // a press that moves less than this is a click, not a drag
@@ -152,12 +273,30 @@ interface WorldPreview3DProps {
   selected: { x: number; y: number } | null
   /** Bumped after a save, so the surrounding sectors are re-read. */
   mapsVersion: number
+  /**
+   * Bumped when the game's art is packed again (object table, models,
+   * textures), so new and changed scenery shows without a page reload.
+   */
+  artVersion?: number
   /** Words for what the pointer is over. */
   describe: (hit: PreviewHit) => string
   onPick: (hit: PreviewHit) => void
   onCamera?: (camera: PreviewCamera) => void
   /** Once the renderer is up: a way to draw any scenery or door model small. */
   onThumbnails?: (thumbnail: (kind: 'object' | 'door', id: number) => string | null) => void
+  /** External controller / callbacks */
+  controllerRef?: React.MutableRefObject<WorldPreviewController | null>
+  onFpsChange?: (fps: number) => void
+  onOpenNav?: () => void
+  className?: string
+  showMinimap?: boolean
+  showControlsBar?: boolean
+  roofs?: boolean
+  onRoofsChange?: (roofs: boolean) => void
+  /** Draw distance, sky and the like; the defaults if not given. */
+  render?: RenderSettings
+  /** The lighting areas being edited, to light the view by; null for the client's own. */
+  lightingAreas?: LightingArea[] | null
 }
 
 export function WorldPreview3D({
@@ -167,26 +306,59 @@ export function WorldPreview3D({
   focus,
   selected,
   mapsVersion,
+  artVersion = 0,
   describe,
   onPick,
   onCamera,
   onThumbnails,
+  controllerRef,
+  onFpsChange,
+  onOpenNav,
+  className,
+  showMinimap = true,
+  roofs: externalRoofs,
+  onRoofsChange,
+  render = DEFAULT_RENDER_SETTINGS,
+  lightingAreas = null,
 }: WorldPreview3DProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const overlayRef = useRef<HTMLCanvasElement | null>(null)
   const minimapRef = useRef<HTMLCanvasElement | null>(null)
   const previewRef = useRef<PreviewInstance | null>(null)
 
   const [status, setStatus] = useState<string>('loading')
-  const [roofs, setRoofs] = useState(true)
+  const [internalRoofs, setInternalRoofs] = useState(true)
+  const roofs = externalRoofs !== undefined ? externalRoofs : internalRoofs
+
   const [hit, setHit] = useState<PreviewHit | null>(null)
+  const [cameraState, setCameraState] = useState<PreviewCamera>({
+    x: focus.x,
+    y: focus.y,
+    plane: 0,
+    yaw: DEFAULT_VIEW.yaw,
+    pitch: DEFAULT_VIEW.pitch,
+    distance: DEFAULT_VIEW.distance,
+  })
+  const [fps, setFps] = useState(60)
+  const [progress, setProgress] = useState<PreviewProgress | null>(null)
+  const frameTimes = useRef<number[]>([])
 
   // the props as of the last render, for effects that fire on something else
-  const latest = useRef({ sectors, objects, wallObjects, onCamera, onThumbnails })
+  const latest = useRef({
+    sectors,
+    objects,
+    wallObjects,
+    onCamera,
+    onThumbnails,
+    onFpsChange,
+    render,
+  })
   // what the renderer was last handed
   const applied = useRef<typeof latest.current | null>(null)
 
   useEffect(() => {
-    latest.current = { sectors, objects, wallObjects, onCamera, onThumbnails }
+    latest.current = { sectors, objects, wallObjects, onCamera, onThumbnails, onFpsChange, render }
   })
 
   // ## drawing
@@ -270,7 +442,14 @@ export function WorldPreview3D({
     const preview = previewRef.current
     const report = cameraReport.current
 
-    if (!preview || !latest.current.onCamera) {
+    if (!preview) {
+      return
+    }
+
+    const cam = preview.camera()
+    setCameraState(cam)
+
+    if (!latest.current.onCamera) {
       return
     }
 
@@ -309,6 +488,16 @@ export function WorldPreview3D({
         return
       }
 
+      // Track FPS
+      const now = performance.now()
+      frameTimes.current.push(now)
+      while (frameTimes.current.length > 0 && frameTimes.current[0] < now - 1000) {
+        frameTimes.current.shift()
+      }
+      const measuredFps = Math.max(1, frameTimes.current.length)
+      setFps(measuredFps)
+      latest.current.onFpsChange?.(measuredFps)
+
       if (pointer.current) {
         const next = preview.pointAt(pointer.current.x, pointer.current.y)
 
@@ -328,6 +517,13 @@ export function WorldPreview3D({
 
       drawMinimap()
       reportCamera()
+
+      // how much of the world around is built, for the loading chip
+      const next = preview.progress()
+
+      setProgress((last) =>
+        last && last.built === next.built && last.total === next.total ? last : next,
+      )
     })
   }, [drawMinimap, reportCamera])
 
@@ -358,6 +554,127 @@ export function WorldPreview3D({
     return true
   }, [])
 
+  /** Sizes the drawing buffer to the view's box. */
+  const fitCanvas = useCallback((preview: PreviewInstance) => {
+    const container = containerRef.current
+
+    if (!container) {
+      return
+    }
+
+    preview.resize(
+      container.clientWidth || 1,
+      container.clientHeight || 1,
+      window.devicePixelRatio || 1,
+    )
+  }, [])
+
+  // Camera Controller actions
+  const resetNorth = useCallback(() => {
+    const preview = previewRef.current
+    if (!preview) return
+    preview.yaw = 0
+    schedule()
+  }, [schedule])
+
+  const resetView = useCallback(() => {
+    const preview = previewRef.current
+    if (!preview) return
+    preview.yaw = DEFAULT_VIEW.yaw
+    preview.pitch = DEFAULT_VIEW.pitch
+    preview.distance = DEFAULT_VIEW.distance
+    if (preview.lookAt(focus.x, focus.y)) {
+      regionChanged.current = true
+    }
+    schedule()
+  }, [focus.x, focus.y, schedule])
+
+  const setYaw = useCallback(
+    (yaw: number) => {
+      const preview = previewRef.current
+      if (!preview) return
+      preview.yaw = ((yaw % 1024) + 1024) % 1024
+      schedule()
+    },
+    [schedule],
+  )
+
+  const setPitch = useCallback(
+    (pitch: number) => {
+      const preview = previewRef.current
+      if (!preview) return
+      preview.pitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, pitch))
+      schedule()
+    },
+    [schedule],
+  )
+
+  const setDistance = useCallback(
+    (distance: number) => {
+      const preview = previewRef.current
+      if (!preview) return
+      preview.distance = Math.max(DISTANCE_MIN, Math.min(DISTANCE_MAX, distance))
+      schedule()
+    },
+    [schedule],
+  )
+
+  const handleSetRoofs = useCallback(
+    (nextRoofs: boolean) => {
+      setInternalRoofs(nextRoofs)
+      onRoofsChange?.(nextRoofs)
+      const preview = previewRef.current
+      if (preview) {
+        preview.setRoofs(nextRoofs)
+        schedule()
+      }
+    },
+    [onRoofsChange, schedule],
+  )
+
+  const lookAt = useCallback(
+    (x: number, y: number) => {
+      const preview = previewRef.current
+      if (!preview) return
+      if (preview.lookAt(x, y)) {
+        regionChanged.current = true
+      }
+      schedule()
+    },
+    [schedule],
+  )
+
+  // Expose controller to ref
+  useEffect(() => {
+    if (!controllerRef) return
+    controllerRef.current = {
+      yaw: cameraState.yaw,
+      pitch: cameraState.pitch,
+      distance: cameraState.distance,
+      roofs,
+      setYaw,
+      setPitch,
+      setDistance,
+      setRoofs: handleSetRoofs,
+      resetNorth,
+      resetView,
+      lookAt,
+    }
+  }, [
+    controllerRef,
+    cameraState.yaw,
+    cameraState.pitch,
+    cameraState.distance,
+    roofs,
+    setYaw,
+    setPitch,
+    setDistance,
+    handleSetRoofs,
+    resetNorth,
+    resetView,
+    lookAt,
+  ])
+
   // ## lifecycle
 
   // boot: the bundle, then the archives, then the first look
@@ -371,15 +688,28 @@ export function WorldPreview3D({
           return
         }
 
-        const preview = new Preview(canvasRef.current)
+        const preview = new Preview(canvasRef.current, { overlay: overlayRef.current })
 
         await preview.load(fetchArchive)
 
-        if (!cancelled) {
-          previewRef.current = preview
-          setStatus('ready')
-          latest.current.onThumbnails?.((kind, id) => preview.thumbnail(kind, id))
+        if (cancelled) {
+          preview.destroy()
+          return
         }
+
+        preview.setSettings(latest.current.render)
+        fitCanvas(preview)
+
+        // a block of the world arrived: draw it, and the minimap it is in
+        preview.onUpdate = (next) => {
+          regionChanged.current = true
+          setProgress(next)
+          schedule()
+        }
+
+        previewRef.current = preview
+        setStatus('ready')
+        latest.current.onThumbnails?.((kind, id) => preview.thumbnail(kind, id))
       })
       .catch((error) => {
         if (!cancelled) {
@@ -393,10 +723,112 @@ export function WorldPreview3D({
       frame.current = 0
       clearTimeout(report.timer || undefined)
       report.timer = 0
+      previewRef.current?.destroy()
       previewRef.current = null
       applied.current = null
     }
+    // the view is started once; schedule and fitCanvas never change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // the drawing buffer follows the box it is shown in, at the screen's own
+  // density
+  useEffect(() => {
+    const container = containerRef.current
+
+    if (status !== 'ready' || !container) {
+      return
+    }
+
+    const observer = new ResizeObserver(() => {
+      const preview = previewRef.current
+
+      if (preview) {
+        fitCanvas(preview)
+        schedule()
+      }
+    })
+
+    observer.observe(container)
+
+    return () => observer.disconnect()
+  }, [status, fitCanvas, schedule])
+
+  // draw distance, sky and the rest
+  const {
+    drawDistance,
+    fog,
+    sky,
+    brightness,
+    ground,
+    lighting,
+    shadows,
+    place,
+    reflections,
+    groundBlend,
+    season,
+    toneMapping,
+    bloom,
+    resolution,
+  } = render
+
+  useEffect(() => {
+    const preview = previewRef.current
+
+    if (status !== 'ready' || !preview) {
+      return
+    }
+
+    preview.setSettings({
+      drawDistance,
+      fog,
+      sky,
+      brightness,
+      ground,
+      lighting,
+      shadows,
+      place,
+      reflections,
+      groundBlend,
+      season,
+      toneMapping,
+      bloom,
+      resolution,
+    })
+    fitCanvas(preview)
+    setProgress(preview.progress())
+    schedule()
+  }, [
+    status,
+    drawDistance,
+    fog,
+    sky,
+    brightness,
+    ground,
+    lighting,
+    shadows,
+    place,
+    reflections,
+    groundBlend,
+    season,
+    toneMapping,
+    bloom,
+    resolution,
+    fitCanvas,
+    schedule,
+  ])
+
+  // the lighting areas being drawn, lighting the view as they change
+  useEffect(() => {
+    const preview = previewRef.current
+
+    if (status !== 'ready' || !preview?.setEnvironments) {
+      return
+    }
+
+    preview.setEnvironments(lightingAreas ? { areas: lightingAreas } : null)
+    schedule()
+  }, [status, lightingAreas, schedule])
 
   // look where asked - the sector just opened, or a tile clicked on the map
   useEffect(() => {
@@ -450,12 +882,33 @@ export function WorldPreview3D({
         regionChanged.current = true
         schedule()
       })
-      .catch(() => {
-        // the view keeps the maps it had; the next save tries again
+      .catch((error) => {
+        console.error('could not reload surrounding sectors', error)
       })
   }, [status, mapsVersion, schedule])
 
-  // by value: the editor hands over a new object on every render
+  // after a pack the object table, models and textures are read again, and
+  // the catalog is handed a new thumbnail function so it draws them afresh
+  useEffect(() => {
+    const preview = previewRef.current
+
+    if (status !== 'ready' || !preview || artVersion === 0) {
+      return
+    }
+
+    preview
+      .reloadArt(fetchArchive)
+      .then(() => {
+        latest.current.onThumbnails?.((kind, id) => preview.thumbnail(kind, id))
+        regionChanged.current = true
+        schedule()
+      })
+      .catch((error) => {
+        console.error('could not reload the game art', error)
+      })
+  }, [status, artVersion, schedule])
+
+  // selected tile outline
   const selectedX = selected?.x ?? null
   const selectedY = selected?.y ?? null
 
@@ -485,8 +938,7 @@ export function WorldPreview3D({
     schedule()
   }, [status, roofs, schedule])
 
-  // the wheel zooms the view, not the page - which takes a listener React
-  // cannot give, since its own wheel listeners are passive
+  // the wheel zooms the view, not the page
   useEffect(() => {
     const canvas = canvasRef.current
 
@@ -527,13 +979,13 @@ export function WorldPreview3D({
     moved: boolean
   } | null>(null)
 
-  /** Client coordinates to the canvas's own pixels, which CSS scales. */
+  /** Client coordinates to the canvas's own pixels */
   const canvasPoint = (event: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = event.currentTarget.getBoundingClientRect()
 
     return {
-      x: ((event.clientX - rect.left) * WIDTH) / rect.width,
-      y: ((event.clientY - rect.top) * HEIGHT) / rect.height,
+      x: ((event.clientX - rect.left) * event.currentTarget.width) / rect.width,
+      y: ((event.clientY - rect.top) * event.currentTarget.height) / rect.height,
     }
   }
 
@@ -582,7 +1034,6 @@ export function WorldPreview3D({
     from.y = event.clientY
 
     if (from.pan) {
-      // grab the ground: it follows the pointer, further when zoomed out
       const scale = preview.distance / 1500 / 12
 
       if (preview.pan(-dx * scale, dy * scale)) {
@@ -637,15 +1088,23 @@ export function WorldPreview3D({
 
     switch (event.key) {
       case 'ArrowLeft':
+      case 'a':
+      case 'A':
         moved = preview.pan(-step, 0)
         break
       case 'ArrowRight':
+      case 'd':
+      case 'D':
         moved = preview.pan(step, 0)
         break
       case 'ArrowUp':
+      case 'w':
+      case 'W':
         moved = preview.pan(0, step)
         break
       case 'ArrowDown':
+      case 's':
+      case 'S':
         moved = preview.pan(0, -step)
         break
       case 'q':
@@ -655,6 +1114,10 @@ export function WorldPreview3D({
       case 'e':
       case 'E':
         preview.yaw = (preview.yaw - 32 + 1024) & 0x3ff
+        break
+      case 'n':
+      case 'N':
+        preview.yaw = 0
         break
       case '+':
       case '=':
@@ -679,91 +1142,88 @@ export function WorldPreview3D({
     }
   }
 
-  const resetView = () => {
-    const preview = previewRef.current
-
-    if (!preview) {
-      return
-    }
-
-    preview.yaw = DEFAULT_VIEW.yaw
-    preview.pitch = DEFAULT_VIEW.pitch
-    preview.distance = DEFAULT_VIEW.distance
-
-    if (preview.lookAt(focus.x, focus.y)) {
-      regionChanged.current = true
-    }
-
-    schedule()
-  }
-
   return (
-    <div className="space-y-2" data-testid="world-preview">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-secondary">
-        <span className="uppercase tracking-wide text-text-primary">Game view</span>
-        <label className="flex items-center gap-1">
-          <input
-            type="checkbox"
-            className="accent-gold-500"
-            checked={roofs}
-            onChange={(e) => setRoofs(e.target.checked)}
+    <div
+      ref={containerRef}
+      className={cn('relative h-full w-full overflow-hidden bg-black select-none', className)}
+      data-testid="world-preview"
+      data-progress={progress ? `${progress.built}/${progress.total}` : undefined}
+    >
+      {/* The 3D Canvas */}
+      <canvas
+        ref={canvasRef}
+        tabIndex={0}
+        aria-label="3D view of the world, as the game draws it"
+        className="block h-full w-full cursor-crosshair touch-none outline-none focus-visible:ring-1 focus-visible:ring-gold-500/60"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={() => {
+          drag.current = null
+        }}
+        onPointerLeave={onPointerLeave}
+        onKeyDown={onKeyDown}
+        onContextMenu={(e) => e.preventDefault()}
+      />
+
+      {/* The outlines of what is hovered and selected, over the scene */}
+      <canvas
+        ref={overlayRef}
+        aria-hidden
+        className="pointer-events-none absolute inset-0 h-full w-full"
+      />
+
+      {/* The world around still being built */}
+      {status === 'ready' && progress && progress.built < progress.total && (
+        <div className="pointer-events-none absolute top-3 left-1/2 z-20 -translate-x-1/2 rounded-full border border-white/10 bg-black/70 px-3 py-1 font-mono text-[11px] text-stone-300 shadow-lg backdrop-blur-md">
+          Loading world · {progress.built}/{progress.total}
+        </div>
+      )}
+
+      {/* Loading / Status message overlay */}
+      {status !== 'ready' && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-sm text-text-secondary bg-black/90 backdrop-blur-sm z-30">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold-500 border-t-transparent mb-3" />
+          <p>{status === 'loading' ? 'Loading RuneScape Classic 3D engine…' : status}</p>
+        </div>
+      )}
+
+      {/* Circular Minimap Overlay at Top Left (Exact OSRS.world style) */}
+      {showMinimap && (
+        <div className="absolute top-3 left-3 z-20 pointer-events-none">
+          <CircularMinimap
+            canvasRef={minimapRef}
+            cameraYaw={cameraState.yaw}
+            cameraX={cameraState.x}
+            cameraY={cameraState.y}
+            plane={cameraState.plane}
+            fps={fps}
+            onResetNorth={resetNorth}
+            onLookAt={lookAt}
+            onOpenNav={onOpenNav}
           />
-          Roofs &amp; upper floors
-        </label>
+        </div>
+      )}
+
+      {/* Bottom Hit & Control Info Bar */}
+      <div className="absolute bottom-3 inset-x-3 pointer-events-none z-10 flex items-center justify-between gap-2">
+        <div className="pointer-events-auto max-w-lg truncate rounded-full bg-black/75 px-3 py-1 font-mono text-[11px] text-stone-300 backdrop-blur-md border border-white/10 shadow-lg">
+          {hit ? (
+            <span className="text-gold-400 font-medium">{describe(hit)}</span>
+          ) : (
+            <span className="text-stone-400">
+              Drag orbit · Right-drag pan · Scroll zoom · WASD fly · Click inspect
+            </span>
+          )}
+        </div>
+
         <button
           type="button"
           onClick={resetView}
-          className="underline decoration-dotted underline-offset-2 hover:text-text-primary"
+          className="pointer-events-auto rounded-full bg-black/75 px-3 py-1 text-[11px] text-stone-300 backdrop-blur-md border border-white/10 hover:border-gold-500/60 hover:text-white transition-all shadow-lg active:scale-95"
         >
-          Reset view
+          Reset View
         </button>
-      </div>
-
-      <div className="relative overflow-hidden rounded border border-stone-700 bg-black">
-        <canvas
-          ref={canvasRef}
-          width={WIDTH}
-          height={HEIGHT}
-          tabIndex={0}
-          aria-label="3D view of the world, as the game draws it"
-          className="block h-auto w-full cursor-crosshair touch-none outline-none focus-visible:ring-2 focus-visible:ring-gold-500/60"
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={() => {
-            drag.current = null
-          }}
-          onPointerLeave={onPointerLeave}
-          onKeyDown={onKeyDown}
-          onContextMenu={(e) => e.preventDefault()}
-        />
-
-        {status !== 'ready' && (
-          <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-text-secondary">
-            {status === 'loading' ? 'Loading the game renderer…' : status}
-          </div>
-        )}
-      </div>
-
-      <p className="min-h-[1rem] text-[11px] text-text-secondary">
-        {hit ? describe(hit) : 'Drag to orbit · right-drag to pan · scroll to zoom · click to select'}
-      </p>
-
-      <div className="flex gap-3">
-        <canvas
-          ref={minimapRef}
-          width={MINIMAP_SIZE}
-          height={MINIMAP_SIZE}
-          aria-label="The game's minimap of the loaded area"
-          className="h-auto w-36 shrink-0 rounded border border-stone-700 bg-black"
-        />
-        <p className="text-[11px] leading-relaxed text-text-secondary">
-          The game&apos;s own renderer, showing your unsaved changes. The
-          minimap is the one the game draws for the 2×2 sectors loaded around
-          the camera, with the sector boundaries in gold and the white mark
-          where the camera looks. With the view focused, the arrow keys pan,
-          Q and E turn, and + and − zoom.
-        </p>
       </div>
     </div>
   )

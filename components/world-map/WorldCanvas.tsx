@@ -71,6 +71,8 @@ export interface MapLayers {
   /** Tiles and edges nobody can walk through. */
   blocked: boolean
   grid: boolean
+  /** HD graphics' lighting areas (the lighting tool's). */
+  lighting: boolean
 }
 
 export const DEFAULT_LAYERS: MapLayers = {
@@ -84,6 +86,7 @@ export const DEFAULT_LAYERS: MapLayers = {
   items: true,
   blocked: false,
   grid: true,
+  lighting: false,
 }
 
 export interface SectorLayer {
@@ -580,6 +583,8 @@ interface WorldCanvasProps {
   stamp?: TileArea | null
   /** Wander boxes to outline, for the NPCs on the selected tile. */
   boxes?: { minX: number; maxX: number; minY: number; maxY: number }[]
+  /** Named rectangles to shade and label: HD graphics' lighting areas. */
+  regions?: { area: TileArea; label: string; selected: boolean }[]
   /** The sectors in view changed: time to fetch any not open yet. */
   onVisible?: (keys: SectorKey[]) => void
   /** A click in select mode, or the start of a stroke in paint mode. */
@@ -808,6 +813,38 @@ export function WorldCanvas(props: WorldCanvasProps) {
         area.height * zoom + lineWidth,
       )
       context.setLineDash([])
+    }
+
+    // the lighting areas, each its own colour, the one being edited
+    // brighter; the first that matches wins, so they're drawn last first
+    const regions = current.regions ?? []
+
+    for (let i = regions.length - 1; i >= 0; i--) {
+      const region = regions[i]
+      const hue = (i * 67 + 20) % 360
+      const left = toX(region.area.x + region.area.width)
+      const top = toY(region.area.y)
+
+      context.fillStyle = `hsla(${hue}, 80%, 60%, ${region.selected ? 0.2 : 0.08})`
+      context.fillRect(left, top, region.area.width * zoom, region.area.height * zoom)
+      outline(
+        region.area,
+        `hsla(${hue}, 85%, ${region.selected ? 75 : 62}%, 0.95)`,
+        region.selected ? 2.5 : 1.5,
+        region.selected ? [] : [8, 4],
+      )
+
+      context.font = '11px ui-sans-serif, system-ui, sans-serif'
+      context.textBaseline = 'top'
+
+      const labelX = Math.max(left, 4) + 4
+      const labelY = Math.max(top, 4) + 4
+      const text = region.label
+
+      context.fillStyle = 'rgba(0, 0, 0, 0.6)'
+      context.fillRect(labelX - 3, labelY - 2, context.measureText(text).width + 6, 15)
+      context.fillStyle = `hsl(${hue}, 85%, 80%)`
+      context.fillText(text, labelX, labelY)
     }
 
     for (const box of current.boxes ?? []) {

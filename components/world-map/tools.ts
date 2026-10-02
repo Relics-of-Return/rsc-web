@@ -15,6 +15,7 @@ export type Tool =
   | 'npcs'
   | 'items'
   | 'area'
+  | 'lighting'
 
 export const TOOLS: { id: Tool; key: string; label: string; hint: string }[] = [
   { id: 'objects', key: '1', label: 'Objects', hint: 'Select tiles; put down scenery and doors' },
@@ -26,6 +27,7 @@ export const TOOLS: { id: Tool; key: string; label: string; hint: string }[] = [
   { id: 'npcs', key: '7', label: 'NPCs', hint: 'Put down NPC spawns' },
   { id: 'items', key: '8', label: 'Items', hint: 'Put down items on the ground' },
   { id: 'area', key: '9', label: 'Area', hint: 'Select a rectangle to copy, paste, turn and clear' },
+  { id: 'lighting', key: '0', label: 'Lighting', hint: "Draw the places that change HD graphics' light" },
 ]
 
 export type HeightAction = 'raise' | 'lower' | 'set' | 'smooth' | 'flatten'
@@ -94,7 +96,8 @@ export const LAYERS_FOR: Partial<Record<Tool, Partial<MapLayers>>> = {
   height: { heights: true },
   underlay: { overlays: false, heights: false },
   roofs: { roofs: true, heights: false, overlays: true },
+  lighting: { lighting: true },
 }
 
 /** Every layer a tool turns on or off, put back when another is picked. */
-export const TOOL_LAYERS = ['heights', 'overlays', 'roofs'] as const
+export const TOOL_LAYERS = ['heights', 'overlays', 'roofs', 'lighting'] as const
