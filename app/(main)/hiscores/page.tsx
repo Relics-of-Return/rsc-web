@@ -2,6 +2,8 @@ import Link from 'next/link'
 
 import { PlayerAvatar } from '@/components/players/Avatar'
 import { Crown } from '@/components/players/Crown'
+import { DiaryCard } from '@/components/players/DiaryCard'
+import { IronBadge } from '@/components/players/IronBadge'
 import { Pagination } from '@/components/shared/Pagination'
 import { SkillIcon } from '@/components/skills/SkillIcon'
 import { Container } from '@/components/ui/Container'
@@ -14,28 +16,38 @@ import { fetchWwwJson } from '@/lib/www'
 const RANKS_PER_PAGE = 16
 
 interface HiscoresPageProps {
-  searchParams: Promise<{ skill?: string; page?: string; username?: string }>
+  searchParams: Promise<{ skill?: string; page?: string; username?: string; mode?: string }>
 }
 
+const MODES = [
+  { id: 'all', label: 'Everyone' },
+  { id: 'ironman', label: 'Ironman' },
+] as const
+
 export async function generateMetadata({ searchParams }: HiscoresPageProps) {
-  const { skill, username } = await searchParams
+  const { skill, username, mode } = await searchParams
 
   if (username) {
     return { title: `${username} - Hiscores` }
   }
 
-  return { title: `${skillLabel(skill ?? 'overall')} Hiscores` }
+  const who = mode === 'ironman' ? 'Ironman ' : ''
+
+  return { title: `${who}${skillLabel(skill ?? 'overall')} Hiscores` }
 }
 
 export default async function HiscoresPage({ searchParams }: HiscoresPageProps) {
-  const { skill: rawSkill, page: rawPage, username } = await searchParams
+  const { skill: rawSkill, page: rawPage, username, mode: rawMode } = await searchParams
 
   const skill = rawSkill ?? 'overall'
   const page = Number.parseInt(rawPage ?? '0', 10) || 0
+  const mode = rawMode === 'ironman' ? 'ironman' : 'all'
   const skills = HISCORE_SKILLS
 
-  const buildHref = (params: { skill?: string; page?: number; username?: string }) => {
+  const buildHref = (params: { skill?: string; page?: number; username?: string; mode?: string }) => {
     const sp = new URLSearchParams()
+    const m = params.mode ?? mode
+    if (m !== 'all' && !params.username) sp.set('mode', m)
     const s = params.skill ?? skill
     if (s !== 'overall') sp.set('skill', s)
     const p = params.page ?? page
@@ -49,6 +61,8 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
   if (username) {
     let ranks: PlayerRanksData['ranks'] = null
     let staffRank = 0
+    let accountMode = 0
+    let diaries: PlayerRanksData['diaries'] = null
     let appearance: PlayerRanksData['appearance'] = null
     let loadError = false
 
@@ -58,6 +72,8 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
       )
       ranks = data.ranks
       staffRank = data.staffRank ?? 0
+      accountMode = data.accountMode ?? 0
+      diaries = data.diaries ?? null
       appearance = data.appearance ?? null
     } catch {
       loadError = true
@@ -85,6 +101,11 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
           title={
             <span className="inline-flex items-center gap-2">
               <Crown rank={staffRank} className="w-[26px] h-[22px]" />
+              <IronBadge
+                accountMode={accountMode}
+                temper={diaries?.temper}
+                className="w-[20px] h-[26px]"
+              />
               {username}
             </span>
           }
@@ -101,9 +122,10 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
           </p>
         ) : (
           <div className="mt-8 flex flex-col lg:flex-row gap-8 lg:gap-12">
-            {/* Avatar */}
-            <div className="flex-shrink-0">
+            {/* Avatar, and the diaries under it */}
+            <div className="flex-shrink-0 space-y-6 lg:w-72">
               <PlayerAvatar appearance={appearance} />
+              <DiaryCard diaries={diaries} accountMode={accountMode} />
             </div>
 
             {/* Ranks Table */}
@@ -158,7 +180,7 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
 
   try {
     data = await fetchWwwJson<HiscoresData>(
-      `/api/hiscores?skill=${encodeURIComponent(skill)}&page=${page}`,
+      `/api/hiscores?skill=${encodeURIComponent(skill)}&page=${page}&mode=${mode}`,
     )
   } catch {
     loadError = true
@@ -171,9 +193,32 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
     <Container className="py-16">
       <SectionTitle
         eyebrow="Rankings"
-        title={`${skillLabel(skill)} Hiscores`}
-        description="Live rankings across all 18 skills, straight from the game server."
+        title={`${mode === 'ironman' ? 'Ironman ' : ''}${skillLabel(skill)} Hiscores`}
+        description={
+          mode === 'ironman'
+            ? 'Ironman accounts ranked among themselves. Their helms are tempered by the Achievement Diaries.'
+            : 'Live rankings across all 18 skills, straight from the game server.'
+        }
       />
+
+      {/* Everyone, or Ironman */}
+      <div className="mt-8 flex justify-center gap-2">
+        {MODES.map((m) => (
+          <Link
+            key={m.id}
+            href={buildHref({ mode: m.id, page: 0 })}
+            className={cn(
+              'inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wide border transition-colors',
+              m.id === mode
+                ? 'border-gold-500/60 bg-gold-500/10 text-gold-400'
+                : 'border-stone-700 text-text-secondary hover:border-gold-500/40 hover:text-gold-400'
+            )}
+          >
+            {m.id === 'ironman' && <IronBadge accountMode={1} temper={0} />}
+            {m.label}
+          </Link>
+        ))}
+      </div>
 
       {/* Skill tabs */}
       <div className="mt-10 flex flex-wrap justify-center gap-2">
@@ -200,7 +245,9 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
         </p>
       ) : ranks.length === 0 ? (
         <p className="mt-12 text-center text-text-secondary">
-          No players are ranked yet — be the first!
+          {mode === 'ironman'
+            ? 'No Ironman accounts are ranked yet. Choose Ironman when you register, or ask Paul in Lumbridge.'
+            : 'No players are ranked yet — be the first!'}
         </p>
       ) : (
         <>
@@ -229,6 +276,7 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
                         className="inline-flex items-center gap-1.5 text-text-primary hover:text-gold-400 transition-colors"
                       >
                         <Crown rank={entry.staffRank} />
+                        <IronBadge accountMode={entry.accountMode} temper={entry.temper} />
                         {entry.username}
                       </Link>
                     </td>

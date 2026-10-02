@@ -1,11 +1,14 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useState, type FormEvent } from 'react'
 
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { ACCOUNT_MODES, HELMS } from '@/data/ironman'
 import { registerAccount } from '@/lib/api'
+import { cn } from '@/lib/utils'
 import {
   PASSWORD_MESSAGE,
   PASSWORD_MIN,
@@ -15,7 +18,23 @@ import {
   USERNAME_PATTERN,
 } from '@/lib/validations'
 
+
+const ACCOUNT_TYPES = [
+  {
+    mode: ACCOUNT_MODES.standard,
+    name: 'Standard',
+    blurb: 'Trade, use the Tradepost and play with everyone.',
+  },
+  {
+    mode: ACCOUNT_MODES.ironman,
+    name: 'Ironman',
+    blurb:
+      'Stand alone: no trading, no Tradepost, nobody else\'s loot. Your helm is tempered by the Achievement Diaries.',
+  },
+] as const
+
 export function RegisterForm() {
+  const [accountMode, setAccountMode] = useState<number>(ACCOUNT_MODES.standard)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -47,10 +66,16 @@ export function RegisterForm() {
     setSubmitting(true)
 
     try {
-      const result = await registerAccount(trimmed, password, confirm)
+      const result = await registerAccount(trimmed, password, confirm, accountMode)
 
       if (result.success) {
-        setSuccess(REGISTER_MESSAGES[result.code] ?? 'Your account has been created!')
+        const created = REGISTER_MESSAGES[result.code] ?? 'Your account has been created!'
+
+        setSuccess(
+          accountMode === ACCOUNT_MODES.ironman
+            ? `${created} You are an Ironman: you stand alone.`
+            : created,
+        )
       } else {
         setError(
           REGISTER_MESSAGES[result.code] ??
@@ -150,6 +175,56 @@ export function RegisterForm() {
           placeholder="Repeat your password"
         />
       </div>
+
+      <fieldset>
+        <legend className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-secondary">
+          Account Type
+        </legend>
+        <div className="grid gap-2" role="radiogroup">
+          {ACCOUNT_TYPES.map((type) => {
+            const chosen = accountMode === type.mode
+
+            return (
+              <label
+                key={type.mode}
+                className={cn(
+                  'flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2.5 transition-colors',
+                  chosen
+                    ? 'border-gold-500/60 bg-gold-500/10'
+                    : 'border-stone-700 hover:border-gold-500/40',
+                )}
+              >
+                <input
+                  type="radio"
+                  name="accountMode"
+                  value={type.mode}
+                  checked={chosen}
+                  onChange={() => setAccountMode(type.mode)}
+                  className="mt-1 accent-gold-500"
+                />
+                <span className="flex-1">
+                  <span className="flex items-center gap-2 text-sm font-medium text-text-primary">
+                    {type.mode === ACCOUNT_MODES.ironman && (
+                      <span className="relative inline-block h-[26px] w-[20px] shrink-0">
+                        <Image
+                          src={HELMS[0].image}
+                          alt=""
+                          fill
+                          unoptimized
+                          className="object-contain [image-rendering:pixelated]"
+                          sizes="20px"
+                        />
+                      </span>
+                    )}
+                    {type.name}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-text-secondary">{type.blurb}</span>
+                </span>
+              </label>
+            )
+          })}
+        </div>
+      </fieldset>
 
       <Button
         type="submit"
