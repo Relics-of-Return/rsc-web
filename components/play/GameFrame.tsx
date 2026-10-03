@@ -6,6 +6,13 @@ import { useEffect } from 'react'
 // the game client runs on its own origin. its in-game world switcher asks
 // this page to do the switch (rsc-client's src/title-screen.js), so the
 // address here always names the world being played
+//
+// the iframe is drawn by React, not built by hand: React keeps the same DOM
+// node across re-renders, while a hand-built one is recreated by StrictMode's
+// double-invoked effect in dev - which loads the whole game client twice and
+// can trip the client's out-of-memory screen. a reload that does happen (dev
+// recompiles the page) is covered by the client resuming its own session; see
+// rsc-client's src/session.js
 export function GameFrame({ clientURL, title }: { clientURL: string; title: string }) {
   const router = useRouter()
 

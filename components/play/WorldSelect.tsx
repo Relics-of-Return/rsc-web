@@ -12,9 +12,6 @@ import { countryName } from '@/lib/countries'
 import type { WorldEntry } from '@/lib/types'
 import { cn, formatNumber } from '@/lib/utils'
 
-// the world select, laid out like Old School RuneScape's server list: quick
-// picks for the best world of each kind, then every world in a table that
-// sorts on any column. a world's name (or its row) opens the game on it
 
 const REFRESH_INTERVAL = 15_000
 
@@ -116,8 +113,6 @@ export function WorldSelect({ initialWorlds }: { initialWorlds: WorldEntry[] }) 
     0,
   )
 
-  // a fresh column sorts the way it's most useful first: the busiest worlds
-  // at the top for players, a-z for everything else
   function toggleSort(key: SortKey) {
     setSort((current) =>
       current.key === key
@@ -129,12 +124,10 @@ export function WorldSelect({ initialWorlds }: { initialWorlds: WorldEntry[] }) 
   return (
     <div>
       <SectionTitle
-        eyebrow="Play"
         title="Select a world"
-        description="Pick where to play. Each world keeps its own accounts, items and hiscores."
       />
 
-      <p className="mt-6 text-center text-text-secondary">
+      <p className="mt-3 text-center text-text-secondary">
         There {playing === 1 ? 'is' : 'are'} currently{' '}
         <span className="font-semibold text-gold-400">{formatNumber(playing)}</span>{' '}
         {playing === 1 ? 'person' : 'people'} playing!
@@ -142,16 +135,6 @@ export function WorldSelect({ initialWorlds }: { initialWorlds: WorldEntry[] }) 
 
       <section aria-labelledby="advanced-select" className="mt-10">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h3
-            id="advanced-select"
-            className="font-adventure text-lg uppercase tracking-wide text-gold-400"
-          >
-            Advanced select{' '}
-            <span className="font-body text-sm normal-case tracking-normal text-text-muted">
-              (for experienced players)
-            </span>
-          </h3>
-          <p className="text-xs text-text-muted">Player counts update every 15 seconds</p>
         </div>
 
         <div className="mt-4 overflow-x-auto rounded-lg border border-stone-700">

@@ -12,6 +12,7 @@ import type {
   SessionData,
   SiteConfig,
   SiteSettings,
+  StaffLogsData,
   WorldsData,
 } from '@/lib/types'
 
@@ -234,4 +235,43 @@ export async function uploadNewsImage(file: File): Promise<{ success: boolean; u
 /** URL of the screenshot the reporter's client uploaded (staff session needed). */
 export function abuseReportScreenshotUrl(id: number): string {
   return `/api/admin/reports/screenshot?id=${id}`
+}
+
+/** Filters for the staff command log. Every one is optional. */
+export interface StaffLogFilters {
+  /** Exact staff member who used a command. */
+  staff?: string
+  /** Exact player a command was used on. */
+  target?: string
+  /** A player name: matches commands they used *and* commands used on them. */
+  player?: string
+  /** Command id (see {@link StaffLogsData.commands}), e.g. 'mute'. */
+  command?: string
+  source?: 'game' | 'website'
+  /** World id; omit or -1 for every world. */
+  world?: number
+  /** Unix timestamp (seconds), inclusive lower bound. */
+  from?: number
+  /** Unix timestamp (seconds), inclusive upper bound. */
+  to?: number
+  page?: number
+}
+
+/**
+ * The staff command log, newest first. Administrators only — rsc-www answers
+ * 401 when nobody is logged in and 403 for anyone below an administrator, both
+ * of which arrive here as an {@link ApiError}.
+ */
+export async function getStaffLogs(
+  filters: StaffLogFilters = {},
+): Promise<StaffLogsData> {
+  const params = new URLSearchParams()
+
+  for (const [key, value] of Object.entries(filters)) {
+    if (value === undefined || value === null || value === '') continue
+    params.set(key, String(value))
+  }
+
+  const query = params.toString()
+  return adminJSON<StaffLogsData>(`/api/admin/logs${query ? `?${query}` : ''}`)
 }

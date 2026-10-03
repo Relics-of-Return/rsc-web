@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 
 import { AbuseReports } from '@/components/admin/AbuseReports'
+import { CommandLog } from '@/components/admin/CommandLog'
 import { NewsManagement } from '@/components/admin/NewsManagement'
 import { SiteSettings } from '@/components/admin/SiteSettings'
 import { Crown } from '@/components/players/Crown'
@@ -22,7 +23,9 @@ import { canEditWorld } from '@/lib/landscape/access'
  */
 export default function AdminPage() {
   const { user, rank, loading } = useAuth()
-  const [activeTab, setActiveTab] = useState<'reports' | 'news' | 'settings'>('reports')
+  const [activeTab, setActiveTab] = useState<
+    'reports' | 'logs' | 'news' | 'settings'
+  >('reports')
 
   if (loading) {
     return (
@@ -120,6 +123,16 @@ export default function AdminPage() {
                 <button
                   type="button"
                   role="tab"
+                  aria-selected={activeTab === 'logs'}
+                  aria-controls="admin-panel-logs"
+                  onClick={() => setActiveTab('logs')}
+                  className={tabClass(activeTab === 'logs')}
+                >
+                  Command Log
+                </button>
+                <button
+                  type="button"
+                  role="tab"
                   aria-selected={activeTab === 'news'}
                   aria-controls="admin-panel-news"
                   onClick={() => setActiveTab('news')}
@@ -146,6 +159,11 @@ export default function AdminPage() {
           {activeTab === 'reports' && (
             <div id="admin-panel-reports" role="tabpanel" aria-label="Abuse Reports">
               <AbuseReports />
+            </div>
+          )}
+          {activeTab === 'logs' && isAdministrator(rank) && (
+            <div id="admin-panel-logs" role="tabpanel" aria-label="Command Log">
+              <CommandLog />
             </div>
           )}
           {activeTab === 'news' && isAdministrator(rank) && (
