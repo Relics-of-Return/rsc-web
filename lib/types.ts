@@ -238,6 +238,46 @@ export interface ResolveReportResult {
   success: boolean
 }
 
+/**
+ * One entry in the staff command log, as returned by rsc-www's
+ * `/api/admin/logs`. Append only: entries are never edited or deleted.
+ */
+export interface StaffLogEntry {
+  id: number
+  /** Unix timestamp (seconds) the action was taken. */
+  date: number
+  /** 'game' for a command used in game, 'website' for a site action. */
+  source: 'game' | 'website'
+  /** World the command was used on, 0 for website actions. */
+  world: number
+  /** Staff member who used it. */
+  staff: string
+  /** Their staff rank when they used it (drawn as a crown). */
+  staff_rank: number
+  /** Command id, e.g. 'mute', 'rank', 'resolve_report'. */
+  command: string
+  /** Player it was used on, '' when there was no target. */
+  target: string
+  /** The context: mute length, new rank, report id... */
+  args: string
+  /** Whether it went through; false for a refused attempt. */
+  success: boolean
+  /** Why it was refused, '' when it went through. */
+  reason: string
+}
+
+/** Staff command log page as returned by rsc-www's `/api/admin/logs`. */
+export interface StaffLogsData {
+  logs: StaffLogEntry[]
+  pages?: number
+  /**
+   * The commands a filter may pick, with friendly names. rsc-www returns this
+   * the way it returns `offences` with reports, so the panel never keeps its
+   * own copy of the list.
+   */
+  commands?: { id: string; name: string }[]
+}
+
 /** One thing a player said, heard or did, as recorded by the game server. */
 export interface ChatActivity {
   /** Unix timestamp (milliseconds). */
