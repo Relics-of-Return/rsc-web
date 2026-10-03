@@ -14,8 +14,6 @@ export const metadata = {
 
 export const dynamic = 'force-dynamic'
 
-// /play is the world select; /play?world=N is the game, on world N
-
 interface PlayPageProps {
   searchParams: Promise<{ world?: string | string[] }>
 }
