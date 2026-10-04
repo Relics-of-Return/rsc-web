@@ -13,6 +13,7 @@ import {
   getGuideRevisions,
   restoreGuideRevision,
   updateGuideArticle,
+  uploadGuideImage,
 } from '@/lib/api'
 import type { GuideRevision, GuideSummary } from '@/lib/types'
 import { formatUnixDateTime } from '@/lib/utils'
@@ -94,6 +95,12 @@ function renderInline(text: string): ReactNode[] {
   const parts = text.split(/(!\[[^\]]*\]\([^\)]+\)|\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^\)]+\))/g)
 
   return parts.map((part, index) => {
+    const image = part.match(/^!\[([^\]]*)\]\(([^\)]+)\)$/)
+    if (image && /^\/(?!\/)/.test(image[2])) {
+      // eslint-disable-next-line @next/next/no-img-element -- uploaded guide images use dynamic API URLs.
+      return <img key={index} src={image[2]} alt={image[1]} className="my-4 max-h-80 w-full rounded border border-stone-700 object-contain" />
+    }
+
     if (part.startsWith('**') && part.endsWith('**')) {
       return <strong key={index}>{part.slice(2, -2)}</strong>
     }
@@ -160,8 +167,10 @@ export function GuideManagement() {
   const [revisions, setRevisions] = useState<GuideRevision[]>([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
+  const [imageBusy, setImageBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -260,6 +269,36 @@ export function GuideManagement() {
       textarea.focus()
       textarea.setSelectionRange(start, start + replacement.length)
     })
+  }
+
+  const insertImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+
+    if (!file || !draft) return
+
+    setImageBusy(true)
+    setError(null)
+
+    try {
+      const result = await uploadGuideImage(file)
+      const textarea = bodyRef.current
+      const alt = file.name.replace(/\.[^.]+$/, '')
+      const imageMarkdown = `![${alt}](${result.url})`
+      const start = textarea?.selectionStart ?? draft.body.length
+      const end = textarea?.selectionEnd ?? start
+      const body = `${draft.body.slice(0, start)}${imageMarkdown}${draft.body.slice(end)}`
+
+      setDraft({ ...draft, body })
+      requestAnimationFrame(() => {
+        textarea?.focus()
+        textarea?.setSelectionRange(start + imageMarkdown.length, start + imageMarkdown.length)
+      })
+    } catch (uploadError) {
+      setError(errorMessage(uploadError, 'Unable to upload that image.'))
+    } finally {
+      setImageBusy(false)
+    }
   }
 
   const save = async (event: FormEvent<HTMLFormElement>) => {
@@ -500,6 +539,22 @@ export function GuideManagement() {
                       {action.label}
                     </button>
                   ))}
+                  <button
+                    type="button"
+                    title="Upload an image and insert it at the cursor"
+                    onClick={() => imageInputRef.current?.click()}
+                    disabled={imageBusy}
+                    className="rounded px-2 py-1 text-xs text-text-secondary hover:bg-stone-700 hover:text-gold-400 disabled:opacity-50"
+                  >
+                    {imageBusy ? 'Uploading…' : 'Image'}
+                  </button>
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/gif,image/webp"
+                    onChange={insertImage}
+                    className="hidden"
+                  />
                   <span className="mx-1 h-4 w-px bg-stone-700" />
                   <button
                     type="button"
