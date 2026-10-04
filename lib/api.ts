@@ -1,8 +1,11 @@
 import type {
   AbuseReportDetail,
   AbuseReportsData,
+  AdminGuideData,
+  AdminGuidesData,
   AdminNewsArticleData,
   AdminNewsData,
+  GuideRevisionsData,
   LoginResult,
   LogoutResult,
   PlayersData,
@@ -229,6 +232,63 @@ export async function uploadNewsImage(file: File): Promise<{ success: boolean; u
   return adminJSON<{ success: boolean; url: string }>('/api/admin/news/image', {
     extension,
     data,
+  })
+}
+
+export async function getAdminGuides(): Promise<AdminGuidesData> {
+  return adminJSON<AdminGuidesData>('/api/admin/guides')
+}
+
+export async function getAdminGuide(id: number): Promise<AdminGuideData> {
+  return adminJSON<AdminGuideData>(`/api/admin/guides?id=${id}`)
+}
+
+/** The last 50 snapshots of one guide, newest first. */
+export async function getGuideRevisions(guideId: number): Promise<GuideRevisionsData> {
+  return adminJSON<GuideRevisionsData>(`/api/admin/guides?revisions=${guideId}`)
+}
+
+export async function createGuideArticle(guide: {
+  slug: string
+  title: string
+  description: string
+  category: string
+  body: string
+}): Promise<{ success: boolean; id?: number }> {
+  return adminJSON<{ success: boolean; id?: number }>('/api/admin/guides', {
+    action: 'create',
+    ...guide,
+  })
+}
+
+export async function updateGuideArticle(guide: {
+  id: number
+  slug: string
+  title: string
+  description: string
+  category: string
+  body: string
+}): Promise<{ success: boolean; id?: number }> {
+  return adminJSON<{ success: boolean; id?: number }>('/api/admin/guides', {
+    action: 'update',
+    ...guide,
+  })
+}
+
+export async function deleteGuideArticle(id: number): Promise<{ success: boolean }> {
+  return adminJSON<{ success: boolean }>('/api/admin/guides', {
+    action: 'delete',
+    id,
+  })
+}
+
+/** Copy an old snapshot back over the guide (saved as a new revision). */
+export async function restoreGuideRevision(
+  revisionId: number,
+): Promise<{ success: boolean; id?: number }> {
+  return adminJSON<{ success: boolean; id?: number }>('/api/admin/guides', {
+    action: 'restore',
+    revisionId,
   })
 }
 
