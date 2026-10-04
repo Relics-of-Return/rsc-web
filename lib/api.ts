@@ -292,6 +292,25 @@ export async function restoreGuideRevision(
   })
 }
 
+export async function uploadGuideImage(file: File): Promise<{ success: boolean; url: string }> {
+  const data = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : ''
+      resolve(result.split(',', 2)[1] ?? '')
+    }
+    reader.onerror = () => reject(reader.error ?? new Error('unable to read image'))
+    reader.readAsDataURL(file)
+  })
+
+  const extension = file.name.split('.').pop()?.toLowerCase() || ''
+
+  return adminJSON<{ success: boolean; url: string }>('/api/admin/guides/image', {
+    extension,
+    data,
+  })
+}
+
 /** URL of the screenshot the reporter's client uploaded (staff session needed). */
 export function abuseReportScreenshotUrl(id: number): string {
   return `/api/admin/reports/screenshot?id=${id}`
