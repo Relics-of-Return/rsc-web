@@ -15,6 +15,18 @@ const nextConfig: NextConfig = {
     '@2003scape/rsc-archiver',
   ],
 
+  // the wiki is its own Next app (rsc-wiki, basePath /wiki) on port 3010;
+  // proxying it under the same origin lets the client's ::wiki lookup open
+  // <site>/wiki/search?q=... and keeps every link on the site relative
+  async rewrites() {
+    const wiki = process.env.RSC_WIKI_URL ?? 'http://127.0.0.1:3010'
+
+    return [
+      { source: '/wiki', destination: `${wiki}/wiki` },
+      { source: '/wiki/:path*', destination: `${wiki}/wiki/:path*` },
+    ]
+  },
+
   // Security headers
   async headers() {
     return [

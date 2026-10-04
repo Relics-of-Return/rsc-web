@@ -129,6 +129,50 @@ export interface AdminNewsArticleData {
   articles: NewsFullArticle | null
 }
 
+/** A wiki article summary, as returned by rsc-www's `/api/guides`. */
+export interface GuideSummary {
+  id: number
+  slug: string
+  title: string
+  description: string
+  /** 'guide' or 'quest' (a quest walkthrough). */
+  category: string
+  /** Unix timestamps in seconds. */
+  createdDate: number
+  updatedDate: number
+}
+
+/** A wiki article with its markdown body. */
+export interface GuideArticle extends GuideSummary {
+  body: string
+}
+
+/** One saved snapshot of a wiki article, from guide_revisions. */
+export interface GuideRevision {
+  id: number
+  guideId: number
+  slug: string
+  title: string
+  category: string
+  editor: string
+  revisionDate: number
+}
+
+/** Guide list as returned by rsc-www's `/api/admin/guides`. */
+export interface AdminGuidesData {
+  guides: GuideSummary[]
+}
+
+/** One guide as returned by rsc-www's `/api/admin/guides?id=`. */
+export interface AdminGuideData {
+  guide: GuideArticle | null
+}
+
+/** Revision list as returned by rsc-www's `/api/admin/guides?revisions=`. */
+export interface GuideRevisionsData {
+  revisions: GuideRevision[]
+}
+
 /**
  * The game client's login scenes (rsc-client's src/title-screen.js), or
  * `seasonal` for the one the time of year calls for.

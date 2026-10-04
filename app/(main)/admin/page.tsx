@@ -5,6 +5,7 @@ import { useState } from 'react'
 
 import { AbuseReports } from '@/components/admin/AbuseReports'
 import { CommandLog } from '@/components/admin/CommandLog'
+import { GuideManagement } from '@/components/admin/GuideManagement'
 import { NewsManagement } from '@/components/admin/NewsManagement'
 import { SiteSettings } from '@/components/admin/SiteSettings'
 import { Crown } from '@/components/players/Crown'
@@ -24,7 +25,7 @@ import { canEditWorld } from '@/lib/landscape/access'
 export default function AdminPage() {
   const { user, rank, loading } = useAuth()
   const [activeTab, setActiveTab] = useState<
-    'reports' | 'logs' | 'news' | 'settings'
+    'reports' | 'logs' | 'news' | 'guides' | 'settings'
   >('reports')
 
   if (loading) {
@@ -143,6 +144,16 @@ export default function AdminPage() {
                 <button
                   type="button"
                   role="tab"
+                  aria-selected={activeTab === 'guides'}
+                  aria-controls="admin-panel-guides"
+                  onClick={() => setActiveTab('guides')}
+                  className={tabClass(activeTab === 'guides')}
+                >
+                  Guide Management
+                </button>
+                <button
+                  type="button"
+                  role="tab"
                   aria-selected={activeTab === 'settings'}
                   aria-controls="admin-panel-settings"
                   onClick={() => setActiveTab('settings')}
@@ -169,6 +180,11 @@ export default function AdminPage() {
           {activeTab === 'news' && isAdministrator(rank) && (
             <div id="admin-panel-news" role="tabpanel" aria-label="News Management">
               <NewsManagement />
+            </div>
+          )}
+          {activeTab === 'guides' && isAdministrator(rank) && (
+            <div id="admin-panel-guides" role="tabpanel" aria-label="Guide Management">
+              <GuideManagement />
             </div>
           )}
           {activeTab === 'settings' && isAdministrator(rank) && (
