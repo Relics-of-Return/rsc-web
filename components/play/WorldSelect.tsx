@@ -1,14 +1,13 @@
 'use client'
 
 import Image from 'next/image'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import useSWR from 'swr'
 
 import { SectionTitle } from '@/components/ui/SectionTitle'
 import { getWorlds } from '@/lib/api'
 import { countryName } from '@/lib/countries'
+import { gameURL } from '@/lib/play'
 import type { WorldEntry } from '@/lib/types'
 import { cn, formatNumber } from '@/lib/utils'
 
@@ -51,8 +50,10 @@ function playersText(world: WorldEntry): string {
   return `${formatNumber(players)} ${players === 1 ? 'player' : 'players'}`
 }
 
+// the world's own game page; /play?world=N redirects there too, for a world
+// list that hasn't loaded its URL
 function playHref(world: WorldEntry): string {
-  return `/play?world=${world.id}`
+  return gameURL(world) ?? `/play?world=${world.id}`
 }
 
 function WorldIcon({ world }: { world: WorldEntry }) {
@@ -83,7 +84,6 @@ const SORT_VALUE: Record<SortKey, (world: WorldEntry) => string | number> = {
 }
 
 export function WorldSelect({ initialWorlds }: { initialWorlds: WorldEntry[] }) {
-  const router = useRouter()
   const [sort, setSort] = useState<Sort>({ key: 'world', ascending: true })
 
   const { data } = useSWR('/api/worlds', getWorlds, {
@@ -178,7 +178,7 @@ export function WorldSelect({ initialWorlds }: { initialWorlds: WorldEntry[] }) 
                 return (
                   <tr
                     key={world.id}
-                    onClick={online ? () => router.push(playHref(world)) : undefined}
+                    onClick={online ? () => window.location.assign(playHref(world)) : undefined}
                     className={cn(
                       'border-b border-stone-800 transition-colors last:border-0',
                       online ? 'cursor-pointer hover:bg-stone-800/60' : 'opacity-55',
@@ -186,7 +186,9 @@ export function WorldSelect({ initialWorlds }: { initialWorlds: WorldEntry[] }) 
                   >
                     <td className="px-4 py-3">
                       {online ? (
-                        <Link
+                        // a plain link: the game is a page of its own, on
+                        // its own host, not a route of this site
+                        <a
                           href={playHref(world)}
                           onClick={(event) => event.stopPropagation()}
                           className="font-medium text-gold-400 hover:underline"
@@ -195,7 +197,7 @@ export function WorldSelect({ initialWorlds }: { initialWorlds: WorldEntry[] }) 
                             <WorldIcon world={world} />
                             {worldName(world)}
                           </span>
-                        </Link>
+                        </a>
                       ) : (
                         <span className="inline-flex items-center gap-2 font-medium text-text-muted">
                           <WorldIcon world={world} />
