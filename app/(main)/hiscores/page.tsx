@@ -10,7 +10,7 @@ import { Container } from '@/components/ui/Container'
 import { SectionTitle } from '@/components/ui/SectionTitle'
 import { HISCORE_SKILLS, hiscoreSkillOrder, skillLabel } from '@/data/skills'
 import type { HiscoresData, PlayerRanksData } from '@/lib/types'
-import { cn, formatNumber } from '@/lib/utils'
+import { cn, formatNumber, formatUsername } from '@/lib/utils'
 import { fetchWwwJson } from '@/lib/www'
 
 const RANKS_PER_PAGE = 16
@@ -28,7 +28,7 @@ export async function generateMetadata({ searchParams }: HiscoresPageProps) {
   const { skill, username, mode } = await searchParams
 
   if (username) {
-    return { title: `${username} - Hiscores` }
+    return { title: `${formatUsername(username)} - Hiscores` }
   }
 
   const who = mode === 'ironman' ? 'Ironman ' : ''
@@ -106,7 +106,7 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
                 temper={diaries?.temper}
                 className="w-[20px] h-[26px]"
               />
-              {username}
+              {formatUsername(username)}
             </span>
           }
           align="left"
@@ -277,7 +277,7 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
                       >
                         <Crown rank={entry.staffRank} />
                         <IronBadge accountMode={entry.accountMode} temper={entry.temper} />
-                        {entry.username}
+                        {formatUsername(entry.username)}
                       </Link>
                     </td>
                     <td className="px-4 py-2.5 text-right font-medium text-gold-400">

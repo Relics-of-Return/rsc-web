@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Container } from '@/components/ui/Container'
 import { staffRankName, isStaff } from '@/data/ranks'
 import { useAuth } from '@/hooks/useAuth'
+import { formatUsername } from '@/lib/utils'
 
 export default function AccountPage() {
   const { user, rank, loading, logout } = useAuth()
@@ -50,7 +51,7 @@ export default function AccountPage() {
                   </p>
                   <p className="mt-1 inline-flex items-center gap-2 font-adventure text-xl text-gold-400">
                     <Crown rank={rank} className="w-[26px] h-[22px]" />
-                    {user}
+                    {formatUsername(user)}
                   </p>
                   {isStaff(rank) && (
                     <p className="mt-1 text-xs uppercase tracking-wide text-text-secondary">

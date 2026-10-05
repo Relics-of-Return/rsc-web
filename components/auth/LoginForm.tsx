@@ -6,6 +6,7 @@ import { useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useAuth } from '@/hooks/useAuth'
+import { formatUsername } from '@/lib/utils'
 import {
   PASSWORD_MESSAGE,
   USERNAME_MESSAGE,
@@ -54,7 +55,7 @@ export function LoginForm() {
     return (
       <div className="text-center">
         <p className="font-adventure text-2xl text-gold-400">
-          Welcome back, {user}
+          Welcome back, {formatUsername(user)}
         </p>
         <p className="mt-2 text-sm text-text-secondary">
           You are already logged in.

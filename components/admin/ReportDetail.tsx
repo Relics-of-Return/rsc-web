@@ -20,7 +20,7 @@ import type {
   TradeItem,
   TrailPoint,
 } from '@/lib/types'
-import { cn, formatUnixDateTime } from '@/lib/utils'
+import { cn, formatUnixDateTime, formatUsername } from '@/lib/utils'
 
 /** Trail points shown per player: the last few are the ones that matter. */
 const TRAIL_POINTS = 8
@@ -112,7 +112,7 @@ function buildTimeline(context: ReportSnapshot): TimelineRow[] {
       involvesAccused: role === 'accused',
       content: (
         <>
-          <span className={cn('font-medium', ROLE_STYLES[role].name)}>{entry.from}</span>
+          <span className={cn('font-medium', ROLE_STYLES[role].name)}>{formatUsername(entry.from)}</span>
           <span className="text-text-muted">: </span>
           <span className="text-text-primary">{entry.text}</span>
         </>
@@ -134,8 +134,8 @@ function buildTimeline(context: ReportSnapshot): TimelineRow[] {
       content: (
         <>
           <Tag>PM</Tag>
-          <span className={cn('font-medium', ROLE_STYLES[role].name)}>{sender}</span>
-          <span className="text-text-muted"> → {receiver}: </span>
+          <span className={cn('font-medium', ROLE_STYLES[role].name)}>{formatUsername(sender)}</span>
+          <span className="text-text-muted"> → {formatUsername(receiver)}: </span>
           <span className="text-text-primary">{entry.text}</span>
         </>
       ),
@@ -155,8 +155,8 @@ function buildTimeline(context: ReportSnapshot): TimelineRow[] {
       content: (
         <>
           <Tag>Trade</Tag>
-          <span className={cn('font-medium', ROLE_STYLES[role].name)}>{owner}</span>
-          <span className="text-text-muted"> with {entry.with} — gave </span>
+          <span className={cn('font-medium', ROLE_STYLES[role].name)}>{formatUsername(owner)}</span>
+          <span className="text-text-muted"> with {formatUsername(entry.with)} — gave </span>
           <span className="text-text-primary">{formatItems(entry.gave)}</span>
           <span className="text-text-muted">, received </span>
           <span className="text-text-primary">{formatItems(entry.got)}</span>
@@ -380,7 +380,7 @@ function PlayerCard({
           <div className="mt-1 flex flex-wrap gap-1.5">
             {facts.alts.map((alt) => (
               <span key={alt} className="rounded bg-stone-700/70 px-1.5 py-0.5 text-xs text-text-primary">
-                {alt}
+                {formatUsername(alt)}
               </span>
             ))}
           </div>
@@ -518,7 +518,7 @@ function CaseFile({ detail }: { detail: AbuseReportDetail }) {
                 <div className="mt-1 flex flex-wrap gap-1.5">
                   {witnesses.map((name) => (
                     <span key={name} className="rounded bg-stone-700/70 px-1.5 py-0.5 text-xs text-text-primary">
-                      {name}
+                      {formatUsername(name)}
                     </span>
                   ))}
                 </div>
@@ -533,7 +533,7 @@ function CaseFile({ detail }: { detail: AbuseReportDetail }) {
             {accusedSnapshot && accusedSnapshot.sameNetwork.length > 0 && (
               <p className="text-xs text-text-secondary">
                 Logged in from the same address as the reported player right now:{' '}
-                <span className="text-text-primary">{accusedSnapshot.sameNetwork.join(', ')}</span>
+                <span className="text-text-primary">{accusedSnapshot.sameNetwork.map(formatUsername).join(', ')}</span>
               </p>
             )}
           </div>
@@ -545,26 +545,26 @@ function CaseFile({ detail }: { detail: AbuseReportDetail }) {
           <li>
             <span className="text-gold-400">{history.against}</span>{' '}
             {history.against === 1 ? 'report has' : 'reports have'} been filed against{' '}
-            <span className="text-text-primary">{report.accused}</span>
+            <span className="text-text-primary">{formatUsername(report.accused)}</span>
             {history.against === 1 ? ' — this one.' : ', including this one.'}
           </li>
           <li>
             <span className="text-gold-400">{history.byReporter}</span>{' '}
             {history.byReporter === 1 ? 'report has' : 'reports have'} been filed by{' '}
-            <span className="text-text-primary">{report.reporter}</span>
+            <span className="text-text-primary">{formatUsername(report.reporter)}</span>
             {history.byReporter === 1 ? ' — this one.' : ', including this one.'}
           </li>
         </ul>
 
         {history.previous.length > 0 && (
           <div className="mt-3">
-            <p className="text-xs text-text-muted">Other reports against {report.accused}</p>
+            <p className="text-xs text-text-muted">Other reports against {formatUsername(report.accused)}</p>
             <ul className="mt-1 space-y-1">
               {history.previous.map((item) => (
                 <li key={item.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
                   <span className="text-text-muted">#{item.id}</span>
                   <span className="text-text-primary">{offenceName(item.offence)}</span>
-                  <span className="text-text-secondary">by {item.reporter}</span>
+                  <span className="text-text-secondary">by {formatUsername(item.reporter)}</span>
                   <span className="text-text-muted">{formatUnixDateTime(item.date)}</span>
                   <Badge tone={item.handled ? 'good' : 'warn'}>{item.handled ? 'Resolved' : 'Open'}</Badge>
                 </li>

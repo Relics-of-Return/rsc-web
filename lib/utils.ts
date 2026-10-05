@@ -42,3 +42,9 @@ export function formatNewsDate(unixSeconds: number | undefined | null): string {
     year: 'numeric',
   })
 }
+
+/** The display form of a username: usernames are stored lowercase, every surface shows them with a capital first letter. */
+export function formatUsername(username: string | null | undefined): string {
+  if (!username) return ''
+  return username.charAt(0).toUpperCase() + username.slice(1)
+}

@@ -7,7 +7,7 @@ import { PlayerMarkers } from '@/components/world-map/player-markers'
 import { Input } from '@/components/ui/Input'
 import { usePlayerPositions } from '@/hooks/usePlayerPositions'
 import type { PlayerPosition } from '@/lib/types'
-import { cn } from '@/lib/utils'
+import { cn, formatUsername } from '@/lib/utils'
 import { gameToMap, planeLabel } from '@/lib/world-map'
 
 /**
@@ -235,7 +235,7 @@ export function WorldMapDisplay({
                 ) : (
                   <span className={cn('h-2 w-2 rounded-full', theme.dot)} />
                 )}
-                <span className="font-medium text-text-primary">{player.username}</span>
+                <span className="font-medium text-text-primary">{formatUsername(player.username)}</span>
                 <span className="text-text-muted">W{player.world}</span>
               </button>
             )

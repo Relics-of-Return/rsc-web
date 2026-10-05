@@ -8,7 +8,7 @@ import { isStaff } from '@/data/ranks'
 import { GITHUB_URL } from '@/lib/constants'
 import { useAuth } from '@/hooks/useAuth'
 import { useServerStatus } from '@/hooks/useServerStatus'
-import { formatNumber } from '@/lib/utils'
+import { formatNumber, formatUsername } from '@/lib/utils'
 
 export function UtilityBar() {
   const { status, loading } = useServerStatus()
@@ -79,7 +79,7 @@ export function UtilityBar() {
                     ) : (
                       <span className="w-1.5 h-1.5 rounded-full bg-gold-500" aria-hidden="true" />
                     )}
-                    {user}
+                    {formatUsername(user)}
                   </Link>
                 ) : (
                   <>

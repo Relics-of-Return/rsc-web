@@ -2,6 +2,7 @@ import type WorldMap from '@2003scape/rsc-world-map'
 
 import { crownPath, staffRankName } from '@/data/ranks'
 import type { PlayerPosition } from '@/lib/types'
+import { formatUsername } from '@/lib/utils'
 import { gameToMap, isOnMap, planeLabel } from '@/lib/world-map'
 
 /**
@@ -209,7 +210,7 @@ export class PlayerMarkers {
       this.setCrown(marker, player.rank)
 
       marker.title =
-        `${player.username} — world ${player.world}, ` +
+        `${formatUsername(player.username)} — world ${player.world}, ` +
         `${planeLabel(point.plane).toLowerCase()} (${player.x}, ${player.y})`
 
       marker.dataset.x = String(point.x - MARKER_CENTRE)
@@ -247,7 +248,7 @@ export class PlayerMarkers {
 
     const name = document.createElement('div')
     name.className = 'rsc-map-marker__name'
-    name.textContent = username
+    name.textContent = formatUsername(username)
     marker.appendChild(name)
 
     // tell a click on the marker apart from the end of a map drag

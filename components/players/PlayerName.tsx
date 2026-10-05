@@ -1,5 +1,5 @@
 import { Crown } from '@/components/players/Crown'
-import { cn } from '@/lib/utils'
+import { cn, formatUsername } from '@/lib/utils'
 
 interface PlayerNameProps {
   username: string
@@ -13,7 +13,7 @@ export function PlayerName({ username, rank, className }: PlayerNameProps) {
   return (
     <span className={cn('inline-flex items-center gap-1.5', className)}>
       <Crown rank={rank} />
-      {username}
+      {formatUsername(username)}
     </span>
   )
 }
