@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { ApiError, getStaffLogs, type StaffLogFilters } from '@/lib/api'
 import type { StaffLogEntry } from '@/lib/types'
 import { staffRankName } from '@/data/ranks'
-import { cn, formatUnixDateTime } from '@/lib/utils'
+import { cn, formatUnixDateTime, formatUsername } from '@/lib/utils'
 
 /** The select styling matches {@link Input}, which is an `<input>` only. */
 const SELECT_CLASS =
@@ -331,7 +331,7 @@ export function CommandLog() {
                             href={`/hiscores?username=${encodeURIComponent(entry.target)}`}
                             className="text-gold-400 transition-colors hover:text-gold-500"
                           >
-                            {entry.target}
+                            {formatUsername(entry.target)}
                           </Link>
                         ) : report ? (
                           <span className="text-text-secondary">
@@ -390,7 +390,7 @@ export function CommandLog() {
                             />
                             <Detail
                               label="Staff"
-                              value={`${entry.staff} (${staffRankName(entry.staff_rank)})`}
+                              value={`${formatUsername(entry.staff)} (${staffRankName(entry.staff_rank)})`}
                             />
                             <Detail label="Command" value={entry.command} />
                             <Detail label="Target" value={entry.target || '—'} />
@@ -415,7 +415,7 @@ export function CommandLog() {
                                   href={`/hiscores?username=${encodeURIComponent(entry.target)}`}
                                   className="text-gold-400 transition-colors hover:text-gold-500"
                                 >
-                                  View {entry.target}&apos;s profile
+                                  View {formatUsername(entry.target)}&apos;s profile
                                 </Link>
                               )}
                               {report && (

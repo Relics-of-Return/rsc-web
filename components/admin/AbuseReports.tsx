@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { isSevere, offenceName } from '@/data/offences'
 import { ApiError, getAbuseReports, resolveAbuseReport } from '@/lib/api'
 import type { AbuseReport } from '@/lib/types'
-import { cn, formatUnixDate, formatUnixDateTime } from '@/lib/utils'
+import { cn, formatUnixDate, formatUnixDateTime, formatUsername } from '@/lib/utils'
 
 /** How often the open queue re-polls rsc-www, in milliseconds. */
 const POLL_INTERVAL = 30000
@@ -238,7 +238,7 @@ export function AbuseReports() {
                       href={`/hiscores?username=${encodeURIComponent(report.accused)}`}
                       className="text-gold-400 hover:text-gold-500 transition-colors"
                     >
-                      {report.accused}
+                      {formatUsername(report.accused)}
                     </Link>
                     {report.muted && (
                       <span
@@ -285,7 +285,7 @@ export function AbuseReports() {
                     {report.handled ? (
                       <span className="text-moss">
                         Resolved
-                        {report.handled_by ? ` by ${report.handled_by}` : ''}
+                        {report.handled_by ? ` by ${formatUsername(report.handled_by)}` : ''}
                       </span>
                     ) : (
                       <span className="text-ember">Open</span>
@@ -333,7 +333,7 @@ export function AbuseReports() {
         >
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h3 className="font-adventure text-sm uppercase tracking-wide text-gold-400">
-              Report #{openReport.id} · {openReport.accused} ·{' '}
+              Report #{openReport.id} · {formatUsername(openReport.accused)} ·{' '}
               {offenceName(openReport.offence)}
             </h3>
             <Button variant="ghost" size="sm" onClick={() => setOpenId(null)}>

@@ -8,6 +8,7 @@ import { SectionTitle } from '@/components/ui/SectionTitle'
 import { ModelEditor } from '@/components/model-editor/ModelEditor'
 import { canEditWorld } from '@/lib/landscape/access'
 import { useAuth } from '@/hooks/useAuth'
+import { formatUsername } from '@/lib/utils'
 
 /**
  * Administrators only, like the World Editor (lib/landscape/access): a
@@ -35,7 +36,7 @@ export function ModelEditorGate() {
           <p className="mt-4 text-sm text-text-secondary">
             {user ? (
               <>
-                The account <span className="text-gold-400">{user}</span> is not an administrator,
+                The account <span className="text-gold-400">{formatUsername(user)}</span> is not an administrator,
                 so the model editor is closed to it.
               </>
             ) : (

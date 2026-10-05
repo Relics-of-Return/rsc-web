@@ -8,6 +8,7 @@ import { SectionTitle } from '@/components/ui/SectionTitle'
 import { WorldEditor } from '@/components/world-map/WorldEditor'
 import { canEditWorld } from '@/lib/landscape/access'
 import { useAuth } from '@/hooks/useAuth'
+import { formatUsername } from '@/lib/utils'
 
 /**
  * Administrators only (see lib/landscape/access). This only decides what to
@@ -35,7 +36,7 @@ export function WorldEditorGate() {
           <p className="mt-4 text-sm text-text-secondary">
             {user ? (
               <>
-                The account <span className="text-gold-400">{user}</span>{' '}
+                The account <span className="text-gold-400">{formatUsername(user)}</span>{' '}
                 is not an administrator, so the world editor is closed to it.
               </>
             ) : (

@@ -8,7 +8,7 @@ import { Crown } from '@/components/players/Crown'
 import { menuItems } from '@/data/navigation'
 import { isStaff } from '@/data/ranks'
 import { useAuth } from '@/hooks/useAuth'
-import { cn } from '@/lib/utils'
+import { cn, formatUsername } from '@/lib/utils'
 
 interface MobileMenuProps {
   isOpen: boolean
@@ -131,7 +131,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                   className="inline-flex items-center gap-2 text-lg font-medium text-gold-400 hover:text-gold-500 transition-colors"
                 >
                   <Crown rank={rank} />
-                  {user}
+                  {formatUsername(user)}
                 </Link>
                 {isStaff(rank) && (
                   <Link

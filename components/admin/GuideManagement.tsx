@@ -16,7 +16,7 @@ import {
   uploadGuideImage,
 } from '@/lib/api'
 import type { GuideRevision, GuideSummary } from '@/lib/types'
-import { formatUnixDateTime } from '@/lib/utils'
+import { formatUnixDateTime, formatUsername } from '@/lib/utils'
 
 const CATEGORIES = [
   { value: 'guide', label: 'Guide', description: 'An overview article: a mode, a system, a place.' },
@@ -379,7 +379,7 @@ export function GuideManagement() {
 
     const when = formatUnixDateTime(revision.revisionDate)
 
-    if (!window.confirm(`Restore the version saved ${when} by ${revision.editor || 'unknown'}?`)) {
+    if (!window.confirm(`Restore the version saved ${when} by ${formatUsername(revision.editor) || 'unknown'}?`)) {
       return
     }
 
@@ -626,7 +626,7 @@ export function GuideManagement() {
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-text-secondary">{revision.title}</span>
                           <span className="block text-xs text-text-muted">
-                            {revision.editor || 'unknown'} · {formatUnixDateTime(revision.revisionDate)}
+                            {formatUsername(revision.editor) || 'unknown'} · {formatUnixDateTime(revision.revisionDate)}
                           </span>
                         </span>
                         <Button

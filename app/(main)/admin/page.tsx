@@ -15,6 +15,7 @@ import { SectionTitle } from '@/components/ui/SectionTitle'
 import { isAdministrator, isStaff, staffRankName } from '@/data/ranks'
 import { useAuth } from '@/hooks/useAuth'
 import { canEditWorld } from '@/lib/landscape/access'
+import { formatUsername } from '@/lib/utils'
 
 /**
  * The administrative section. Gated on the staff rank carried by the session
@@ -64,7 +65,7 @@ export default function AdminPage() {
             Staff Only
           </h1>
           <p className="mt-4 text-sm text-text-secondary">
-            The account <span className="text-gold-400">{user}</span> does not
+            The account <span className="text-gold-400">{formatUsername(user)}</span> does not
             hold a staff rank, so there is nothing here for you.
           </p>
           <div className="mt-6 flex justify-center">
@@ -90,7 +91,7 @@ export default function AdminPage() {
         Signed in as
         <span className="inline-flex items-center gap-1.5 text-gold-400">
           <Crown rank={rank} className="h-[22px] w-[26px]" />
-          {user}
+          {formatUsername(user)}
         </span>
         <span className="text-text-muted">({staffRankName(rank)})</span>
       </p>
