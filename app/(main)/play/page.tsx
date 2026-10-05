@@ -1,10 +1,11 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
 
-import { GameFrame } from '@/components/play/GameFrame'
 import { WorldSelect } from '@/components/play/WorldSelect'
 import { Button } from '@/components/ui/Button'
 import { Container } from '@/components/ui/Container'
+import { gameURL } from '@/lib/play'
 import type { WorldEntry, WorldsData } from '@/lib/types'
 import { fetchWwwJson } from '@/lib/www'
 
@@ -59,8 +60,9 @@ export default async function PlayPage({ searchParams }: PlayPageProps) {
   const id = Number(Array.isArray(requested) ? requested[0] : requested)
   const world = worlds.find((entry) => entry.id === id)
   const name = world?.name ?? `World ${id}`
+  const href = world ? gameURL(world) : null
 
-  if (!world || !world.online || !world.clientURL) {
+  if (!world || !world.online || !href) {
     return (
       <Container className="py-6">
         <Notice>
@@ -75,22 +77,9 @@ export default async function PlayPage({ searchParams }: PlayPageProps) {
     )
   }
 
-  return (
-    <Container className="py-6">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm">
-        <Link href="/play" className="text-gold-400 hover:text-gold-500">
-          ← World select
-        </Link>
-        <p className="text-text-secondary">
-          <span className="font-medium text-text-primary">{name}</span>
-          {world.botting ? ' · botting allowed' : ''}
-        </p>
-      </div>
-      <div className="rounded-lg border border-stone-700 bg-stone-950 p-2 shadow-[0_0_30px_rgba(212,175,55,0.12)]">
-        {/* keyed on the world: two worlds' client urls differ only in the
-            hash, which on its own wouldn't reload the frame */}
-        <GameFrame key={world.id} clientURL={world.clientURL} title={`${name} game client`} />
-      </div>
-    </Container>
-  )
+  // the game is a page of its own (rsc-client's world-endpoint.js), not a
+  // frame on this one: nothing the site does - a deploy, a reload, a dev
+  // recompile, a navigation - can end a game. /play?world=N just sends the
+  // player there, for links and bookmarks made before
+  redirect(href)
 }

@@ -32,8 +32,15 @@ export interface WorldEntry {
   online?: boolean | number
   /** True on a world where botting is allowed (world 2). */
   botting?: boolean
-  /** Client URL that reaches this particular world. */
+  /** Client URL that reaches this particular world — the launcher and a local
+   *  stack read the launch string in its hash. */
   clientURL?: string
+  /** The game page the site sends a player to, e.g.
+   *  https://play.relicsofreturn.com/?world=1. Falls back to clientURL. */
+  playURL?: string
+  /** The world's socket for a game page served over TLS, e.g.
+   *  wss://play.relicsofreturn.com/ws/1. */
+  websocketURL?: string
   [key: string]: unknown
 }
 
