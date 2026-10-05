@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
 
+import { ServersOffline } from '@/components/play/ServersOffline'
 import { WorldSelect } from '@/components/play/WorldSelect'
 import { Button } from '@/components/ui/Button'
 import { Container } from '@/components/ui/Container'
@@ -41,10 +42,7 @@ export default async function PlayPage({ searchParams }: PlayPageProps) {
   if (!worlds) {
     return (
       <Container className="py-6">
-        <Notice>
-          The game stack is currently offline. Start it with the root{' '}
-          <code className="text-gold-400">manager.cmd</code> and refresh this page.
-        </Notice>
+        <ServersOffline />
       </Container>
     )
   }

@@ -258,3 +258,61 @@
     transform: none;
   }
 }
+
+@keyframes rsc-offline-bar {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes rsc-offline-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes rsc-offline-halo {
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 0.9; transform: scale(1.08); }
+}
+
+@keyframes rsc-offline-ping {
+  0% { opacity: 0.45; transform: scale(0.6); }
+  70%, 100% { opacity: 0; transform: scale(1.4); }
+}
+
+.rsc-offline-bar { transform-origin: left; animation: rsc-offline-bar linear forwards; }
+
+.rsc-offline-ping { animation: rsc-offline-ping 3.6s ease-out infinite; }
+.rsc-offline-halo {
+
+  background: radial-gradient(
+    closest-side,
+    rgba(212, 175, 55, 0) 42%,
+    rgba(212, 175, 55, 0.28) 68%,
+    rgba(212, 175, 55, 0) 86%
+  );
+  animation: rsc-offline-halo 3.4s ease-in-out infinite;
+}
+
+.rsc-offline-ring {
+  background: conic-gradient(
+    from 0deg,
+    rgba(212, 175, 55, 0) 0deg,
+    rgba(212, 175, 55, 0.14) 150deg,
+    rgba(240, 198, 116, 0.85) 320deg,
+    #fff6d8 356deg,
+    rgba(255, 246, 216, 0) 360deg
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 9px), #000 calc(100% - 8px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 9px), #000 calc(100% - 8px));
+  filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.45));
+  animation: rsc-offline-spin 2.6s linear infinite;
+}
+
+.rsc-offline-orbit { animation: rsc-offline-spin 2.6s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rsc-offline-ping,
+  .rsc-offline-halo,
+  .rsc-offline-ring,
+  .rsc-offline-orbit { animation: none; }
+  .rsc-offline-bar { animation: none; transform: scaleX(1); }
+}
