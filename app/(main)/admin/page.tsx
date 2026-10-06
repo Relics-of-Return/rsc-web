@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 
 import { AbuseReports } from '@/components/admin/AbuseReports'
+import { BetaRounds } from '@/components/admin/BetaRounds'
 import { CommandLog } from '@/components/admin/CommandLog'
 import { GuideManagement } from '@/components/admin/GuideManagement'
 import { NewsManagement } from '@/components/admin/NewsManagement'
@@ -26,7 +27,7 @@ import { formatUsername } from '@/lib/utils'
 export default function AdminPage() {
   const { user, rank, loading } = useAuth()
   const [activeTab, setActiveTab] = useState<
-    'reports' | 'logs' | 'news' | 'guides' | 'settings'
+    'reports' | 'beta' | 'logs' | 'news' | 'guides' | 'settings'
   >('reports')
 
   if (loading) {
@@ -120,6 +121,16 @@ export default function AdminPage() {
             >
               Abuse Reports
             </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'beta'}
+              aria-controls="admin-panel-beta"
+              onClick={() => setActiveTab('beta')}
+              className={tabClass(activeTab === 'beta')}
+            >
+              Beta Testing
+            </button>
             {isAdministrator(rank) && (
               <>
                 <button
@@ -171,6 +182,11 @@ export default function AdminPage() {
           {activeTab === 'reports' && (
             <div id="admin-panel-reports" role="tabpanel" aria-label="Abuse Reports">
               <AbuseReports />
+            </div>
+          )}
+          {activeTab === 'beta' && (
+            <div id="admin-panel-beta" role="tabpanel" aria-label="Beta Testing">
+              <BetaRounds />
             </div>
           )}
           {activeTab === 'logs' && isAdministrator(rank) && (
