@@ -62,7 +62,7 @@ export function WorldEditorGate() {
       <SectionTitle
         eyebrow="Administration — World editing"
         title="World Editor"
-        description="Change the ground, walls, scenery and doors of the world both game servers run on. Saves go to rsc-server/data and the client's copy of the map; restart the game servers to see them in-game."
+        description="Change the ground, walls, scenery and doors of the world both game servers run on. Saves go to the dev stage (rsc-server-dev/data and rsc-client-dev's copy of the map); restart World 4 to see them in-game, and push-beta to send them to testers."
       />
 
       <div className="mt-8">

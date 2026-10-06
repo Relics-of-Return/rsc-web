@@ -5,6 +5,8 @@ import { EventEmitter } from 'node:events'
 import fs from 'node:fs'
 import path from 'node:path'
 
+import { editorCheckout } from '@/lib/stage'
+
 /**
  * The model editor's files: the model sources in rsc-client/assets/models
  * (ModelBuilder scripts, one model each, named as the model) and this
@@ -33,7 +35,7 @@ export class ModelConflict extends Error {}
 function clientDir(): string {
   return (
     process.env.RSC_CLIENT_DIR ??
-    path.join(/*turbopackIgnore: true*/ process.cwd(), '..', 'rsc-client')
+    editorCheckout('rsc-client')
   )
 }
 
@@ -92,7 +94,7 @@ export function listSources(): ModelSourceInfo[] {
 
       return {
         name: file.slice(0, -3),
-        file: `rsc-client/assets/models/${file}`,
+        file: `${path.basename(clientDir())}/assets/models/${file}`,
         size: stat.size,
         modified: Math.floor(stat.mtimeMs),
       }

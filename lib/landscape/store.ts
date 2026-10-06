@@ -7,6 +7,7 @@ import { MessageChannel, Worker, receiveMessageOnPort } from 'node:worker_thread
 
 import { readDefinitions } from '@/lib/definitions'
 import { encodeHei } from '@/lib/landscape/hei'
+import { editorCheckout } from '@/lib/stage'
 import {
   OBJECT_BASE as OBJECT_OFFSET,
   PLANE_HEIGHT as PLANE_ELEVATION,
@@ -77,7 +78,7 @@ type ArchiveName = (typeof ARCHIVES)[number]
 function serverLandscapeDir(): string {
   return (
     process.env.RSC_LANDSCAPE_DIR ??
-    path.join(/*turbopackIgnore: true*/ process.cwd(), '..', 'rsc-server', 'data', 'landscape')
+    path.join(/*turbopackIgnore: true*/ editorCheckout('rsc-server'), 'data', 'landscape')
   )
 }
 
@@ -85,7 +86,7 @@ function serverLandscapeDir(): string {
 function clientLandscapeDir(): string {
   return (
     process.env.RSC_CLIENT_DATA_DIR ??
-    path.join(/*turbopackIgnore: true*/ process.cwd(), '..', 'rsc-client', 'dist', 'data204')
+    path.join(/*turbopackIgnore: true*/ editorCheckout('rsc-client'), 'dist', 'data204')
   )
 }
 
@@ -96,7 +97,7 @@ function clientLandscapeDir(): string {
 function locationsDir(): string {
   return (
     process.env.RSC_LOCATIONS_DIR ??
-    path.join(/*turbopackIgnore: true*/ process.cwd(), '..', 'rsc-server', 'data', 'locations')
+    path.join(/*turbopackIgnore: true*/ editorCheckout('rsc-server'), 'data', 'locations')
   )
 }
 
@@ -153,7 +154,7 @@ function readArchives(directory: string): Record<ArchiveName, Buffer> {
 function clientDistDir(): string {
   return (
     process.env.RSC_CLIENT_DIST_DIR ??
-    path.join(/*turbopackIgnore: true*/ process.cwd(), '..', 'rsc-client', 'dist')
+    path.join(/*turbopackIgnore: true*/ editorCheckout('rsc-client'), 'dist')
   )
 }
 

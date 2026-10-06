@@ -469,7 +469,7 @@ export function ModelEditor() {
         await refreshCatalog()
         setSelected({ kind: 'source', name })
         setNewName(null)
-        setMessage({ kind: 'good', text: `Made rsc-client/assets/models/${name}.js.` })
+        setMessage({ kind: 'good', text: `Made rsc-client-dev/assets/models/${name}.js.` })
       } catch (error) {
         setMessage({ kind: 'bad', text: error instanceof Error ? error.message : String(error) })
       } finally {

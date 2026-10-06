@@ -5,6 +5,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { cleanArea, type LightingArea } from '@/lib/landscape/lighting'
+import { editorCheckout } from '@/lib/stage'
 
 /**
  * Reads and writes the lighting areas in rsc-client/assets/hd/
@@ -23,9 +24,7 @@ function environmentsFile(): string {
   return (
     process.env.RSC_ENVIRONMENTS_FILE ??
     path.join(
-      /*turbopackIgnore: true*/ process.cwd(),
-      '..',
-      'rsc-client',
+      /*turbopackIgnore: true*/ editorCheckout('rsc-client'),
       'assets',
       'hd',
       'environments.json',

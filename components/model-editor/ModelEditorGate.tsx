@@ -58,7 +58,7 @@ export function ModelEditorGate() {
       <SectionTitle
         eyebrow="Administration — Scenery models"
         title="Model Editor"
-        description="The scenery models in rsc-client/assets/models, drawn live by the game's own renderer as you edit them, or as they change on disk. Save writes the source; Pack puts every model into the game's archives, and players see it after reloading."
+        description="The scenery models in rsc-client-dev/assets/models (the dev stage), drawn live by the game's own renderer as you edit them, or as they change on disk. Save writes the source; Pack puts every model into the dev client's archives, and World 4 shows it after reloading."
       />
 
       <div className="mt-8">
