@@ -1,10 +1,14 @@
 import type {
   AbuseReportDetail,
   AbuseReportsData,
+  AdminBetaData,
   AdminGuideData,
   AdminGuidesData,
   AdminNewsArticleData,
   AdminNewsData,
+  BetaData,
+  BetaResolution,
+  BetaResult,
   GuideRevisionsData,
   LoginResult,
   LogoutResult,
@@ -353,4 +357,64 @@ export async function getStaffLogs(
 
   const query = params.toString()
   return adminJSON<StaffLogsData>(`/api/admin/logs${query ? `?${query}` : ''}`)
+}
+
+// -- beta testing --------------------------------------------------------------
+
+/** Like adminJSON, but the error carries rsc-www's own message ("say what went wrong"). */
+async function betaJSON<T>(path: string, body?: unknown): Promise<T> {
+  const res = await fetch(
+    path,
+    body === undefined
+      ? { cache: 'no-store' }
+      : {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+  )
+  const data = await res.json().catch(() => null)
+
+  if (!res.ok) {
+    throw new ApiError(res.status, (data && data.error) || `request failed (${res.status})`)
+  }
+
+  return data as T
+}
+
+/** The beta round testers are working on (or the last one), with the player's own answers. */
+export async function getBeta(): Promise<BetaData> {
+  return betaJSON<BetaData>('/api/beta')
+}
+
+/** A logged-in player's answer for one checklist item; "broken" needs a note. */
+export async function submitBetaResult(itemId: number, result: BetaResult, note = ''): Promise<BetaData> {
+  return betaJSON<BetaData>('/api/beta/result', { itemId, result, note })
+}
+
+/** Staff: the round with every answer and who gave it, and the earlier rounds. */
+export async function getAdminBeta(): Promise<AdminBetaData> {
+  return betaJSON<AdminBetaData>('/api/admin/beta')
+}
+
+/** Staff: add an item (no id), change one, or remove one. */
+export async function editBetaItem(item: {
+  id?: number
+  title?: string
+  howToTest?: string
+  area?: string
+  /** null or 0 uses the round's count */
+  minWorks?: number | null
+  remove?: boolean
+}): Promise<BetaData> {
+  return betaJSON<BetaData>('/api/admin/beta/item', item)
+}
+
+/** Staff: what a broken report turned out to be (null reopens it). */
+export async function resolveBetaReport(
+  itemId: number,
+  resultId: number,
+  resolution: BetaResolution | null,
+): Promise<BetaData> {
+  return betaJSON<BetaData>('/api/admin/beta/resolve', { itemId, resultId, resolution })
 }

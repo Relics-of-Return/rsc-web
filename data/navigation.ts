@@ -23,6 +23,7 @@ export const footerColumns = [
       { label: 'Tradepost', href: '/tradepost' },
       { label: 'Wiki', href: '/wiki' },
       { label: 'Roadmap', href: '/roadmap' },
+      { label: 'Beta Testing', href: '/beta' },
       { label: 'GitHub Source', href: 'https://github.com/Relics-of-Return' },
     ],
   },

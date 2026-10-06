@@ -559,3 +559,81 @@ export interface TradepostItemData {
   world: number
   item: TradepostItemDetail
 }
+
+// -- beta testing (rsc-www's src/beta.js, documentation/RELEASE_CHANNELS.md) --
+
+export type BetaResult = 'works' | 'broken'
+
+/** What staff decided a broken report was. "fixed" holds the round back. */
+export type BetaResolution = 'fixed' | 'not-a-bug' | 'duplicate'
+
+export interface BetaReport {
+  note: string
+  at: string
+  resolution: BetaResolution | null
+}
+
+/** One player's answer, as staff see it. */
+export interface BetaResultEntry {
+  id: number
+  player: string
+  result: BetaResult
+  note: string
+  at: string
+  resolution: BetaResolution | null
+  resolvedBy?: string | null
+  resolvedAt?: string | null
+}
+
+export interface BetaItem {
+  id: number
+  title: string
+  howToTest: string
+  area: string
+  /** "Works" answers this item needs: its own (3 for trading and banking), or the round's. */
+  minWorks: number
+  /** Players who said it works. */
+  works: number
+  /** Broken reports still holding it back. */
+  broken: number
+  status: 'confirmed' | 'broken' | 'testing'
+  /** The logged-in player's own answer. */
+  mine: { result: BetaResult; note: string } | null
+  /** What has been reported broken, without who reported it. */
+  reports: BetaReport[]
+  /** Staff only: every answer and who gave it. */
+  results?: BetaResultEntry[]
+}
+
+export interface BetaRound {
+  id: number
+  revision: string
+  status: 'open' | 'promoted' | 'replaced' | 'closed'
+  openedAt: string
+  closedAt: string | null
+  closeReason: string | null
+  /** "Works" answers an item needs from different players. */
+  minWorks: number
+  notes: string
+  items: BetaItem[]
+  confirmed: number
+  total: number
+  /** Every item confirmed: ready to go live. */
+  green: boolean
+}
+
+export interface BetaData {
+  round: BetaRound | null
+}
+
+export interface AdminBetaData {
+  round: BetaRound | null
+  history: {
+    id: number
+    revision: string
+    status: BetaRound['status']
+    openedAt: string
+    closedAt: string | null
+    items: number
+  }[]
+}
