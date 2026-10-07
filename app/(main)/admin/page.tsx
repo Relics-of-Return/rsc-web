@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 
 import { AbuseReports } from '@/components/admin/AbuseReports'
-import { BetaRounds } from '@/components/admin/BetaRounds'
+import { BetaTesters } from '@/components/admin/BetaTesters'
 import { CommandLog } from '@/components/admin/CommandLog'
 import { GuideManagement } from '@/components/admin/GuideManagement'
 import { NewsManagement } from '@/components/admin/NewsManagement'
@@ -18,12 +18,6 @@ import { useAuth } from '@/hooks/useAuth'
 import { canEditWorld } from '@/lib/landscape/access'
 import { formatUsername } from '@/lib/utils'
 
-/**
- * The administrative section. Gated on the staff rank carried by the session
- * — but the gate here only decides what to draw: rsc-www checks the same rank
- * on every /api/admin request, so a player who forces this page open still
- * gets nothing back.
- */
 export default function AdminPage() {
   const { user, rank, loading } = useAuth()
   const [activeTab, setActiveTab] = useState<
@@ -129,7 +123,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('beta')}
               className={tabClass(activeTab === 'beta')}
             >
-              Beta Testing
+              Beta Testers
             </button>
             {isAdministrator(rank) && (
               <>
@@ -185,8 +179,8 @@ export default function AdminPage() {
             </div>
           )}
           {activeTab === 'beta' && (
-            <div id="admin-panel-beta" role="tabpanel" aria-label="Beta Testing">
-              <BetaRounds />
+            <div id="admin-panel-beta" role="tabpanel" aria-label="Beta Testers">
+              <BetaTesters />
             </div>
           )}
           {activeTab === 'logs' && isAdministrator(rank) && (
