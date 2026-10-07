@@ -622,11 +622,49 @@ export interface BetaRound {
   green: boolean
 }
 
+/**
+ * What a player may do in the beta (rsc-www's betaAccess). With `inviteOnly`
+ * only beta testers - accounts linked to a Discord member with the Beta Tester
+ * role - and staff may play World 3 and mark checklist items.
+ */
+export interface BetaAccess {
+  inviteOnly: boolean
+  /** Discord linking is set up on the website */
+  enabled: boolean
+  loggedIn: boolean
+  mayTest: boolean
+  linked?: boolean
+  discordName?: string | null
+  /** in the Discord server at the last check */
+  inServer?: boolean
+  tester?: boolean
+  staff?: boolean
+  /** when the role was last checked (ms) */
+  checked?: number | null
+}
+
+/** Staff: one account's Discord link. */
+export interface BetaTesterLink {
+  username: string
+  discordId: string
+  discordName: string | null
+  inServer: boolean
+  tester: boolean
+  linked: number
+  checked: number
+}
+
 export interface BetaData {
   round: BetaRound | null
+  access?: BetaAccess
 }
 
 export interface AdminBetaData {
+  testers?: {
+    enabled: boolean
+    inviteOnly: boolean
+    links: BetaTesterLink[]
+  }
   round: BetaRound | null
   history: {
     id: number
