@@ -15,29 +15,69 @@ import {
 import { GITHUB_URL } from '@/lib/constants'
 import { landingFontVariables } from '@/lib/fonts'
 import { cn } from '@/lib/utils'
+import { fetchWwwJson } from '@/lib/www'
 
 export const metadata = {
   title: 'Download — Relics of Return',
   description:
-    'Download the official desktop client for Relics of Return. Available for Windows, macOS, and Linux, with cross-platform launcher options.',
+    'Download the Relics of Return launcher for Windows. It keeps the game up to date by itself.',
+}
+
+// asked again at most every five minutes, so a new launcher shows up here
+// without a redeploy
+export const revalidate = 300
+
+// the launcher's own update manifest (rsc-tauri-client/scripts/publish-launcher.cjs),
+// which rsc-www serves from its public/downloads/launcher/ at api.*
+type LatestLauncher = {
+  version: string
+  platforms?: Record<string, { url: string }>
+}
+
+async function windowsInstaller() {
+  try {
+    const latest = await fetchWwwJson<LatestLauncher>('/downloads/launcher/latest.json', { revalidate: 300 })
+    const url = latest.platforms?.['windows-x86_64']?.url
+
+    if (!url) {
+      return null
+    }
+
+    let size = '—'
+
+    try {
+      const head = await fetch(url, { method: 'HEAD', next: { revalidate: 300 } })
+      const bytes = Number(head.headers.get('content-length'))
+
+      if (bytes > 0) {
+        size = `${(bytes / 1048576).toFixed(1)} MB`
+      }
+    } catch {
+      // the size is only shown
+    }
+
+    return { version: latest.version, url, size }
+  } catch {
+    // the API (this PC, through the tunnel) is down: the card says SOON
+    return null
+  }
 }
 
 const DOWNLOAD_LINKS = [
   {
     id: 'windows',
-    title: 'Windows Client',
+    title: 'Windows Launcher',
     os: 'Windows 10 / 11 (64-bit)',
-    filename: 'RelicsOfReturn-Setup-2.4.1.exe',
-    size: '48.2 MB',
+    size: '—',
     format: 'Installer (.exe)',
     recommended: true,
-    released: true,
+    released: false,
     icon: Monitor,
     badge: 'Recommended',
     badgeStyle: 'border-amber-500/40 bg-amber-500/15 text-[#f2ca50]',
-    downloadUrl: '#download-win',
-    secondaryUrl: '#win-portable',
-    secondaryLabel: 'Portable .zip version',
+    downloadUrl: '#',
+    secondaryUrl: '',
+    secondaryLabel: 'Signed, and updates itself',
   },
   {
     id: 'macos',
@@ -89,7 +129,20 @@ const DOWNLOAD_LINKS = [
   },
 ]
 
-export default function DownloadSection() {
+export default async function DownloadSection() {
+  const windows = await windowsInstaller()
+  const links = DOWNLOAD_LINKS.map((item) =>
+    item.id === 'windows' && windows
+      ? {
+          ...item,
+          released: true,
+          size: windows.size,
+          format: `Installer (.exe) · v${windows.version}`,
+          downloadUrl: windows.url,
+        }
+      : item
+  )
+
   return (
     <div className={cn(landingFontVariables, 'bg-[#17130d] font-sans-body text-[#ece1d6] min-h-screen py-16 lg:py-20 flex items-center justify-center')}>
       <section className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -99,13 +152,13 @@ export default function DownloadSection() {
             Select Your Operating System
           </h1>
           <p className="text-sm text-[#d0c5af] leading-relaxed">
-            Bundled packages include custom Java runtime binaries for effortless one-click setups.
+            The launcher keeps the game up to date by itself, and its settings can join the beta world.
           </p>
         </div>
 
         {/* 4-Card OS Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {DOWNLOAD_LINKS.map((item) => {
+          {links.map((item) => {
             const Icon = item.icon
             return (
               <div
@@ -185,7 +238,7 @@ export default function DownloadSection() {
                     )}
 
                     <div className="flex items-center justify-center">
-                      {item.released ? (
+                      {item.released && item.secondaryUrl ? (
                         <a
                           href={item.secondaryUrl}
                           className="flex items-center gap-1.5 text-[11px] font-adventure text-[#a69986] hover:text-[#f2ca50] transition-colors"
@@ -241,10 +294,10 @@ export default function DownloadSection() {
             <div className="border border-[#2d2417] bg-[#1a140d] p-5 rounded-sm shadow-md flex flex-col gap-2">
               <div className="flex items-center gap-2 text-[#f2ca50] font-adventure text-base font-bold">
                 <HelpCircle className="w-5 h-5 text-[#f2ca50]" />
-                <h4>Do I need to install Java?</h4>
+                <h4>Do I need anything else?</h4>
               </div>
               <p className="text-xs text-[#d0c5af] leading-relaxed">
-                No extra installation needed. The Windows package is self-contained with custom Java runtime binaries bundled to launch instantly.
+                No. The launcher draws the game with Microsoft Edge WebView2, which Windows 10 and 11 already have, and downloads the game itself the first time it starts.
               </p>
             </div>
 
