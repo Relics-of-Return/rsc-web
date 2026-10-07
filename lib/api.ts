@@ -300,13 +300,16 @@ export function abuseReportScreenshotUrl(id: number): string {
 
 // Filters for the staff command log. Every one is optional.
 export interface StaffLogFilters {
+  // A player name: matches commands they used *and* commands used on them.
+  player?: string
   // Exact staff member who used a command.
   staff?: string
   // Exact player a command was used on.
   target?: string
-  // A player name: matches commands they used *and* commands used on them.
   // Command id (see {@link StaffLogsData.commands}), e.g. 'mute'.
   command?: string
+  // Where a command was used; omit for both.
+  source?: 'game' | 'website'
   // World id; omit or -1 for every world.
   world?: number
   // Unix timestamp (seconds), inclusive lower bound.
