@@ -6,6 +6,7 @@ import type {
   AdminGuidesData,
   AdminNewsArticleData,
   AdminNewsData,
+  BetaAccess,
   BetaData,
   BetaResolution,
   BetaResult,
@@ -417,4 +418,14 @@ export async function resolveBetaReport(
   resolution: BetaResolution | null,
 ): Promise<BetaData> {
   return betaJSON<BetaData>('/api/admin/beta/resolve', { itemId, resultId, resolution })
+}
+
+/** The logged-in player's Discord link and beta access (the invite-only beta). */
+export async function getBetaAccess(): Promise<BetaAccess> {
+  return betaJSON<BetaAccess>('/api/discord')
+}
+
+/** Removes the logged-in player's Discord link, and with it their beta access. */
+export async function unlinkDiscord(): Promise<BetaAccess> {
+  return betaJSON<BetaAccess>('/api/discord/unlink', {})
 }

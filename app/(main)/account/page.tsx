@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 
+import { BetaAccessCard } from '@/components/account/BetaAccessCard'
 import { PersonalHiscores } from '@/components/account/PersonalHiscores'
 import { Crown } from '@/components/players/Crown'
 import { Button } from '@/components/ui/Button'
@@ -71,6 +72,8 @@ export default function AccountPage() {
                 </h2>
                 <PersonalHiscores username={user} />
               </div>
+
+              <BetaAccessCard />
 
               <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-stone-700 pt-6">
                 <p className="text-sm text-text-secondary">

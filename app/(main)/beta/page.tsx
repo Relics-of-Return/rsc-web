@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Container } from '@/components/ui/Container'
 import { useAuth } from '@/hooks/useAuth'
 import { ApiError, getBeta, submitBetaResult } from '@/lib/api'
-import type { BetaItem, BetaResult, BetaRound } from '@/lib/types'
+import type { BetaAccess, BetaItem, BetaResult, BetaRound } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 /**
@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils'
 export default function BetaPage() {
   const { user, loading: authLoading } = useAuth()
   const [round, setRound] = useState<BetaRound | null>(null)
+  const [access, setAccess] = useState<BetaAccess | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -29,6 +30,7 @@ export default function BetaPage() {
     getBeta()
       .then((data) => {
         setRound(data.round)
+        setAccess(data.access ?? null)
         setError(null)
       })
       .catch(() => setError('The beta checklist could not be loaded. The website API may be offline.'))
@@ -47,6 +49,9 @@ export default function BetaPage() {
   }, [round])
 
   const open = round?.status === 'open'
+
+  // an invite-only beta takes answers from testers and staff only
+  const mayTest = access?.mayTest ?? true
 
   return (
     <Container className="py-16">
@@ -77,6 +82,14 @@ export default function BetaPage() {
         <>
           <RoundSummary round={round} />
 
+          {open && user && !mayTest && (
+            <p className="mx-auto mt-6 max-w-2xl rounded-lg border border-stone-700 bg-stone-800/60 p-4 text-center text-sm text-text-secondary">
+              The beta is invite only: World 3 and this checklist are for members of our Discord server with
+              the <b>Beta Tester</b> role. Link your Discord account on your{' '}
+              <Link href="/account" className="text-gold-400 hover:underline">account page</Link> to join.
+            </p>
+          )}
+
           {open && !user && (
             <p className="mx-auto mt-6 max-w-2xl rounded-lg border border-stone-700 bg-stone-800/60 p-4 text-center text-sm text-text-secondary">
               <Link href="/login" className="text-gold-400 hover:underline">Log in</Link> to mark items
@@ -94,7 +107,7 @@ export default function BetaPage() {
                       key={item.id}
                       item={item}
                       minWorks={item.minWorks}
-                      canAnswer={open && !!user}
+                      canAnswer={open && !!user && mayTest}
                       onAnswered={setRound}
                     />
                   ))}

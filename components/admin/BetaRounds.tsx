@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/Button'
 import { ApiError, editBetaItem, getAdminBeta, resolveBetaReport } from '@/lib/api'
-import type { AdminBetaData, BetaItem, BetaResolution } from '@/lib/types'
+import type { AdminBetaData, BetaItem, BetaResolution, BetaTesterLink } from '@/lib/types'
 import { cn, formatUsername } from '@/lib/utils'
 
 const RESOLUTIONS: { value: BetaResolution | ''; label: string }[] = [
@@ -105,6 +105,8 @@ export function BetaRounds() {
         </div>
       )}
 
+      {data?.testers && <Testers {...data.testers} />}
+
       {data && data.history.length > 1 && (
         <div className="border-t border-stone-700 px-5 py-4">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-text-secondary">Earlier rounds</h3>
@@ -119,6 +121,47 @@ export function BetaRounds() {
         </div>
       )}
     </section>
+  )
+}
+
+/**
+ * Who may play the invite-only beta: every account linked to Discord, and
+ * whether it holds the Beta Tester role (looked up every few minutes). Roles
+ * are given and taken away in Discord itself.
+ */
+function Testers({ enabled, inviteOnly, links }: { enabled: boolean; inviteOnly: boolean; links: BetaTesterLink[] }) {
+  const testers = links.filter((link) => link.tester).length
+
+  return (
+    <div className="border-t border-stone-700 px-5 py-4">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
+        Beta testers · {testers} of {links.length} linked account{links.length === 1 ? '' : 's'}
+      </h3>
+      <p className="mt-1 text-xs text-text-secondary">
+        {!enabled
+          ? 'Discord is not configured in rsc-www, so nobody is sent to World 3 as a tester.'
+          : inviteOnly
+            ? 'Invite only: just these testers and staff may mark checklist items.'
+            : 'Anyone logged in may mark checklist items (betaInviteOnly is off in rsc-www).'}{' '}
+        Give or take the Beta Tester role in Discord; it counts here within a few minutes.
+      </p>
+      {links.length > 0 && (
+        <ul className="mt-3 space-y-1 text-xs">
+          {links.map((link) => (
+            <li key={link.username} className="flex flex-wrap gap-x-2 text-text-secondary">
+              <span className={link.tester ? 'text-emerald-300' : 'text-text-muted'}>{link.tester ? '●' : '○'}</span>
+              <span className="text-text-primary">{formatUsername(link.username)}</span>
+              <span>· {link.discordName || link.discordId}</span>
+              <span>
+                ·{' '}
+                {link.tester ? 'Beta Tester' : link.inServer ? 'no role' : 'not in the Discord server'}
+              </span>
+              <span>· checked {new Date(link.checked).toLocaleString()}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
 
