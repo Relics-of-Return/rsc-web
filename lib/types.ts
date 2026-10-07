@@ -54,11 +54,8 @@ export interface HiscoreRank {
   username: string
   level: number
   experience: number
-  /** Staff rank, drawn as a crown in front of the username (0 = player). */
   staffRank?: number
-  /** Account type: 0 standard, 1 Ironman. */
   accountMode?: number
-  /** How far the diaries have tempered an Ironman's helm, 0 (iron) to 4 (rune). */
   temper?: number
 }
 
@@ -68,10 +65,8 @@ export interface HiscoresData {
   pages?: number
 }
 
-/**
- * A player's achievement diaries as the lookup shows them: per area, how many
- * tiers are complete and how many claimed, and the Ironman helm's temper.
- */
+// A player's achievement diaries as the lookup shows them: per area, how many
+// tiers are complete and how many claimed, and the Ironman helm's temper.
 export interface DiarySummary {
   temper: number
   complete: Record<string, number>
@@ -501,6 +496,7 @@ export interface TradepostMarketItem {
   month: TradepostStats | null
 }
 
+// rsc-data-server's /api/tradepost-market
 export interface TradepostTotals {
   openOffers: number
   listedItems: number
@@ -508,7 +504,6 @@ export interface TradepostTotals {
   dayTrades: number
   dayVolume: number
   dayValue: number
-  /** When the first trade was recorded, or null before any. */
   trackedSince: number | null
 }
 
@@ -519,9 +514,8 @@ export interface TradepostMarketData {
   items: TradepostMarketItem[]
 }
 
-/** One bucket of an item's price history. */
+// rsc-data-server's /api/tradepost-market
 export interface TradepostHistoryPoint {
-  /** Start of the bucket. */
   time: number
   volume: number
   average: number
@@ -529,13 +523,14 @@ export interface TradepostHistoryPoint {
   high: number
 }
 
+// rsc-data-server's /api/tradepost-market
 export interface TradepostHistory {
-  /** Bucket size in seconds. */
   bucket: number
   since: number
   points: TradepostHistoryPoint[]
 }
 
+// rsc-data-server's /api/tradepost-market/item
 export type TradepostRange = 'day' | 'month' | 'all'
 
 export interface TradepostItemDetail {
@@ -550,100 +545,29 @@ export interface TradepostItemDetail {
     buying: TradepostPriceLevel[]
     selling: TradepostPriceLevel[]
   }
-  /** Newest first. */
   trades: TradepostTrade[]
   history: Record<TradepostRange, TradepostHistory>
 }
 
+// rsc-data-server's /api/tradepost-market/item
 export interface TradepostItemData {
   world: number
   item: TradepostItemDetail
 }
 
-// -- beta testing (rsc-www's src/beta.js, documentation/RELEASE_CHANNELS.md) --
-
-export type BetaResult = 'works' | 'broken'
-
-/** What staff decided a broken report was. "fixed" holds the round back. */
-export type BetaResolution = 'fixed' | 'not-a-bug' | 'duplicate'
-
-export interface BetaReport {
-  note: string
-  at: string
-  resolution: BetaResolution | null
-}
-
-/** One player's answer, as staff see it. */
-export interface BetaResultEntry {
-  id: number
-  player: string
-  result: BetaResult
-  note: string
-  at: string
-  resolution: BetaResolution | null
-  resolvedBy?: string | null
-  resolvedAt?: string | null
-}
-
-export interface BetaItem {
-  id: number
-  title: string
-  howToTest: string
-  area: string
-  /** "Works" answers this item needs: its own (3 for trading and banking), or the round's. */
-  minWorks: number
-  /** Players who said it works. */
-  works: number
-  /** Broken reports still holding it back. */
-  broken: number
-  status: 'confirmed' | 'broken' | 'testing'
-  /** The logged-in player's own answer. */
-  mine: { result: BetaResult; note: string } | null
-  /** What has been reported broken, without who reported it. */
-  reports: BetaReport[]
-  /** Staff only: every answer and who gave it. */
-  results?: BetaResultEntry[]
-}
-
-export interface BetaRound {
-  id: number
-  revision: string
-  status: 'open' | 'promoted' | 'replaced' | 'closed'
-  openedAt: string
-  closedAt: string | null
-  closeReason: string | null
-  /** "Works" answers an item needs from different players. */
-  minWorks: number
-  notes: string
-  items: BetaItem[]
-  confirmed: number
-  total: number
-  /** Every item confirmed: ready to go live. */
-  green: boolean
-}
-
-/**
- * What a player may do in the beta (rsc-www's betaAccess). With `inviteOnly`
- * only beta testers - accounts linked to a Discord member with the Beta Tester
- * role - and staff may play World 3 and mark checklist items.
- */
+// invite-only beta (rsc-www's src/discord.js)
 export interface BetaAccess {
-  inviteOnly: boolean
-  /** Discord linking is set up on the website */
   enabled: boolean
   loggedIn: boolean
-  mayTest: boolean
   linked?: boolean
   discordName?: string | null
-  /** in the Discord server at the last check */
   inServer?: boolean
   tester?: boolean
   staff?: boolean
-  /** when the role was last checked (ms) */
   checked?: number | null
 }
 
-/** Staff: one account's Discord link. */
+// Staff: one account's Discord link
 export interface BetaTesterLink {
   username: string
   discordId: string
@@ -654,24 +578,8 @@ export interface BetaTesterLink {
   checked: number
 }
 
-export interface BetaData {
-  round: BetaRound | null
-  access?: BetaAccess
-}
-
-export interface AdminBetaData {
-  testers?: {
-    enabled: boolean
-    inviteOnly: boolean
-    links: BetaTesterLink[]
-  }
-  round: BetaRound | null
-  history: {
-    id: number
-    revision: string
-    status: BetaRound['status']
-    openedAt: string
-    closedAt: string | null
-    items: number
-  }[]
+// Staff: every account linked to Discord (rsc-www's /api/admin/beta-testers)
+export interface BetaTestersData {
+  enabled: boolean
+  links: BetaTesterLink[]
 }

@@ -1,15 +1,12 @@
 import type {
   AbuseReportDetail,
   AbuseReportsData,
-  AdminBetaData,
   AdminGuideData,
   AdminGuidesData,
   AdminNewsArticleData,
   AdminNewsData,
   BetaAccess,
-  BetaData,
-  BetaResolution,
-  BetaResult,
+  BetaTestersData,
   GuideRevisionsData,
   LoginResult,
   LogoutResult,
@@ -23,11 +20,6 @@ import type {
   StaffLogsData,
   WorldsData,
 } from '@/lib/types'
-
-/**
- * Client-side fetchers. These hit the Next.js BFF route handlers
- * (app/api/*), which in turn talk to rsc-www server-side.
- */
 
 async function getJSON<T>(path: string): Promise<T> {
   const res = await fetch(path, { cache: 'no-store' })
@@ -103,10 +95,7 @@ export async function logoutAccount(): Promise<LogoutResult> {
   return postJSON<LogoutResult>('/api/logout', {})
 }
 
-/**
- * Error carrying the HTTP status, so the admin section can tell "log in"
- * (401) apart from "you are not staff" (403).
- */
+// Error carrying the HTTP status, so the admin section can tell "log in" (401) apart from "you are not staff" (403).
 export class ApiError extends Error {
   status: number
 
@@ -136,13 +125,6 @@ async function adminJSON<T>(path: string, body?: unknown): Promise<T> {
   return res.json() as Promise<T>
 }
 
-/**
- * The in-game abuse report queue. Staff only — rsc-www answers 401 when
- * nobody is logged in and 403 when the account is not staff, both of which
- * arrive here as an {@link ApiError}.
- *
- * `handled`: 0 open reports (default), 1 resolved, -1 everything.
- */
 export async function getAbuseReports(
   options: { handled?: number; accused?: string; page?: number } = {},
 ): Promise<AbuseReportsData> {
@@ -156,7 +138,7 @@ export async function getAbuseReports(
   return adminJSON<AbuseReportsData>(`/api/admin/reports?${params}`)
 }
 
-/** Marks an abuse report as dealt with, or reopens it. */
+// Marks an abuse report as dealt with, or reopens it.
 export async function resolveAbuseReport(
   id: number,
   handled = true,
@@ -167,16 +149,12 @@ export async function resolveAbuseReport(
   })
 }
 
-/** The full case file for one report: snapshot, account facts and history. */
+// The full case file for one report: snapshot, account facts and history.
 export async function getAbuseReportDetail(id: number): Promise<AbuseReportDetail> {
   return adminJSON<AbuseReportDetail>(`/api/admin/reports/detail?id=${id}`)
 }
 
-/**
- * Changes the site's settings given, leaving the rest, and resolves to all of
- * them. Administrators only: rsc-www answers 401 when nobody is logged in and
- * 403 for anyone below an administrator.
- */
+// Changes the site's settings given, leaving the rest, and resolves to all of them. Administrators only: rsc-www answers 401 when nobody is logged in and 403 for anyone below an administrator.
 export async function saveSiteSettings(changes: Partial<SiteSettings>): Promise<SiteSettings> {
   return adminJSON<SiteSettings>('/api/admin/settings', changes)
 }
@@ -287,7 +265,6 @@ export async function deleteGuideArticle(id: number): Promise<{ success: boolean
   })
 }
 
-/** Copy an old snapshot back over the guide (saved as a new revision). */
 export async function restoreGuideRevision(
   revisionId: number,
 ): Promise<{ success: boolean; id?: number }> {
@@ -316,36 +293,29 @@ export async function uploadGuideImage(file: File): Promise<{ success: boolean; 
   })
 }
 
-/** URL of the screenshot the reporter's client uploaded (staff session needed). */
+// URL of the screenshot the reporter's client uploaded (staff session needed).
 export function abuseReportScreenshotUrl(id: number): string {
   return `/api/admin/reports/screenshot?id=${id}`
 }
 
-/** Filters for the staff command log. Every one is optional. */
+// Filters for the staff command log. Every one is optional.
 export interface StaffLogFilters {
-  /** Exact staff member who used a command. */
+  // Exact staff member who used a command.
   staff?: string
-  /** Exact player a command was used on. */
+  // Exact player a command was used on.
   target?: string
-  /** A player name: matches commands they used *and* commands used on them. */
-  player?: string
-  /** Command id (see {@link StaffLogsData.commands}), e.g. 'mute'. */
+  // A player name: matches commands they used *and* commands used on them.
+  // Command id (see {@link StaffLogsData.commands}), e.g. 'mute'.
   command?: string
-  source?: 'game' | 'website'
-  /** World id; omit or -1 for every world. */
+  // World id; omit or -1 for every world.
   world?: number
-  /** Unix timestamp (seconds), inclusive lower bound. */
+  // Unix timestamp (seconds), inclusive lower bound.
   from?: number
-  /** Unix timestamp (seconds), inclusive upper bound. */
+  // Unix timestamp (seconds), inclusive upper bound.
   to?: number
   page?: number
 }
 
-/**
- * The staff command log, newest first. Administrators only — rsc-www answers
- * 401 when nobody is logged in and 403 for anyone below an administrator, both
- * of which arrive here as an {@link ApiError}.
- */
 export async function getStaffLogs(
   filters: StaffLogFilters = {},
 ): Promise<StaffLogsData> {
@@ -360,9 +330,6 @@ export async function getStaffLogs(
   return adminJSON<StaffLogsData>(`/api/admin/logs${query ? `?${query}` : ''}`)
 }
 
-// -- beta testing --------------------------------------------------------------
-
-/** Like adminJSON, but the error carries rsc-www's own message ("say what went wrong"). */
 async function betaJSON<T>(path: string, body?: unknown): Promise<T> {
   const res = await fetch(
     path,
@@ -383,41 +350,9 @@ async function betaJSON<T>(path: string, body?: unknown): Promise<T> {
   return data as T
 }
 
-/** The beta round testers are working on (or the last one), with the player's own answers. */
-export async function getBeta(): Promise<BetaData> {
-  return betaJSON<BetaData>('/api/beta')
-}
-
-/** A logged-in player's answer for one checklist item; "broken" needs a note. */
-export async function submitBetaResult(itemId: number, result: BetaResult, note = ''): Promise<BetaData> {
-  return betaJSON<BetaData>('/api/beta/result', { itemId, result, note })
-}
-
-/** Staff: the round with every answer and who gave it, and the earlier rounds. */
-export async function getAdminBeta(): Promise<AdminBetaData> {
-  return betaJSON<AdminBetaData>('/api/admin/beta')
-}
-
-/** Staff: add an item (no id), change one, or remove one. */
-export async function editBetaItem(item: {
-  id?: number
-  title?: string
-  howToTest?: string
-  area?: string
-  /** null or 0 uses the round's count */
-  minWorks?: number | null
-  remove?: boolean
-}): Promise<BetaData> {
-  return betaJSON<BetaData>('/api/admin/beta/item', item)
-}
-
-/** Staff: what a broken report turned out to be (null reopens it). */
-export async function resolveBetaReport(
-  itemId: number,
-  resultId: number,
-  resolution: BetaResolution | null,
-): Promise<BetaData> {
-  return betaJSON<BetaData>('/api/admin/beta/resolve', { itemId, resultId, resolution })
+/** Staff: every account linked to Discord, and whether it holds the Beta Tester role. */
+export async function getBetaTesters(): Promise<BetaTestersData> {
+  return betaJSON<BetaTestersData>('/api/admin/beta-testers')
 }
 
 /** The logged-in player's Discord link and beta access (the invite-only beta). */
