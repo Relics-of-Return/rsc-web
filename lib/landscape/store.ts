@@ -15,6 +15,7 @@ import {
   SECTOR_TILES,
   gameToTile,
   tileToGame,
+  writeDiagonal,
   type ItemSpawn,
   type NpcSpawn,
   type PlacedObject,
@@ -552,6 +553,36 @@ interface Touched {
   dat: boolean
 }
 
+/**
+ * Writes the shared diagonal/scenery buffer from the tiles, which is the one
+ * buffer rsc-landscape's own populateBuffers() cannot take anything out of:
+ * it stores a tile's diagonal when it has one and its `.loc` object when it
+ * has one, and says nothing at all about a tile that has just had either
+ * taken away. The value the tile used to hold stays in wallsDiagonal, so
+ * toDat()/toLoc() encode the wall straight back into the archives and it is
+ * there again the next time the sector is read — erase a diagonal wall, watch
+ * it come back on save. (The other wall fields are written unconditionally,
+ * which is why erasing those works.) Every tile is written, so a sector whose
+ * buffer had drifted comes out matching its tiles too.
+ */
+function syncDiagonals(sector: any): void {
+  for (const column of sector.tiles) {
+    for (const tile of column) {
+      const diagonal = tile.wall.diagonal
+      const kind = tile.objectId != null ? 'object' : diagonal ? 'diagonal' : 'none'
+
+      // tile.index is the buffer position: x * 48 + y, the same one Tile's
+      // own populate() reads
+      sector.wallsDiagonal[tile.index] = writeDiagonal(
+        kind,
+        diagonal ? diagonal.direction : '/',
+        diagonal ? diagonal.overlay : 0,
+        tile.objectId ?? 0,
+      )
+    }
+  }
+}
+
 /** Applies edits to a live sector's tile objects, and says which files they reach. */
 function applyEdits(sector: any, edits: TileEdit[]): Touched {
   const touched = { hei: false, dat: false }
@@ -603,6 +634,7 @@ function applyEdits(sector: any, edits: TileEdit[]): Touched {
 
   // push the tile objects back into the buffers the encoders read
   sector.populateBuffers()
+  syncDiagonals(sector)
 
   return touched
 }
@@ -798,6 +830,14 @@ function saveLandscape(
 
       if (loc) {
         place('loc', loc)
+      } else {
+        // no .loc objects left in the sector: leaving the old entry there
+        // would put them all back the moment it is read
+        const home = homeOf(sourceArchives, `${name}.loc`, 'loc')
+
+        if (home && built[home].hasEntry(`${name}.loc`)) {
+          built[home].removeEntry(`${name}.loc`)
+        }
       }
     }
   }

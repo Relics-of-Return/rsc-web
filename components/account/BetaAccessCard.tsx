@@ -31,7 +31,7 @@ const RESULTS: Record<string, { text: string; good?: boolean }> = {
  * a Discord member with the Beta Tester role (and staff). Linking goes through
  * Discord's own consent page and only reads who the player is.
  */
-export function BetaAccessCard() {
+export function BetaAccessCard({ className = 'mt-8' }: { className?: string }) {
   const [access, setAccess] = useState<BetaAccess | null>(null)
   const [failed, setFailed] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -66,7 +66,7 @@ export function BetaAccessCard() {
   const notice = result ? RESULTS[result] : null
 
   return (
-    <div className="mt-8">
+    <div className={className}>
       <h2 className="font-adventure text-lg text-gold-400 uppercase tracking-wide">Beta Testing</h2>
 
       {notice && (

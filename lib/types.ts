@@ -583,3 +583,57 @@ export interface BetaTestersData {
   enabled: boolean
   links: BetaTesterLink[]
 }
+
+// the account page (rsc-www's /api/account): the account on every world, since
+// each world keeps its own character
+
+/** An account's facts on one world. Dates are unix seconds. */
+export interface AccountDetails {
+  username: string
+  rank: number
+  /** 0 standard, 1 Ironman. */
+  accountMode: number
+  questPoints: number
+  totalLevel: number
+  createdAt: number
+  lastLogin: number
+  /** 0 not muted, -1 for good, otherwise when it ends. */
+  mutedUntil: number
+  /** 0 not banned, -1 for good, otherwise when it ends. */
+  bannedUntil: number
+  /** The world the account is playing on now, 0 when offline. */
+  world: number
+}
+
+export interface AccountCharacter {
+  ranks: Record<string, PlayerRank>
+  accountMode: number
+  diaries: DiarySummary | null
+  appearance: PlayerAppearance | null
+}
+
+export interface AccountWorld {
+  id: number
+  name: string
+  channel: string
+  botting: boolean
+  /** False when the world's data server didn't answer. */
+  reachable: boolean
+  /** Null on a world without the account, or one too old to tell. */
+  account: AccountDetails | null
+  /** Null until the character has hiscore entries there. */
+  character: AccountCharacter | null
+}
+
+export interface AccountPageData {
+  username: string
+  rank: number
+  worlds: AccountWorld[]
+}
+
+export interface PasswordChangeResult {
+  success: boolean
+  sessionsEnded: number
+  /** The other worlds: changed, kept their own password (reason), or unreachable (null). */
+  worlds: { id: number; name: string; changed: boolean | null; reason: string | null }[]
+}

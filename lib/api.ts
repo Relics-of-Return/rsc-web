@@ -1,5 +1,6 @@
 import type {
   AbuseReportDetail,
+  AccountPageData,
   AbuseReportsData,
   AdminGuideData,
   AdminGuidesData,
@@ -10,6 +11,7 @@ import type {
   GuideRevisionsData,
   LoginResult,
   LogoutResult,
+  PasswordChangeResult,
   PlayersData,
   RegisterResult,
   ResolveReportResult,
@@ -351,6 +353,20 @@ async function betaJSON<T>(path: string, body?: unknown): Promise<T> {
   }
 
   return data as T
+}
+
+/** The logged-in player's account page: their account and character on every world. */
+export async function getAccountPage(): Promise<AccountPageData> {
+  return betaJSON<AccountPageData>('/api/account')
+}
+
+/**
+ * A new password. A refusal throws an ApiError whose message is rsc-www's
+ * reason: wrong-password, throttled, invalid-password, mismatch,
+ * contains-username, same-password or unavailable.
+ */
+export async function changeAccountPassword(change: { password: string; newPassword: string; confirm: string }): Promise<PasswordChangeResult> {
+  return betaJSON<PasswordChangeResult>('/api/account/password', change)
 }
 
 /** Staff: every account linked to Discord, and whether it holds the Beta Tester role. */
