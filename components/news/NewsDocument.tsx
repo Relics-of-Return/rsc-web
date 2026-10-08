@@ -2,13 +2,13 @@ import { Info, Lightbulb, OctagonAlert, StickyNote, TriangleAlert } from 'lucide
 
 import { cn } from '@/lib/utils'
 import { safeHref, safeImageSrc, youtubeId, type NewsBlock } from '@/lib/news-format'
+import { NewsGallery } from './NewsGallery'
 import { RichInline, RichParagraphs } from './NewsRichText'
 
 const ALIGN = { left: '', center: 'text-center', right: 'text-right' } as const
 const TEXT_SIZE = { small: 'text-sm', normal: '', large: 'text-lg text-text-primary' } as const
 const IMAGE_WIDTH = { small: 'sm:w-1/3', medium: 'sm:w-1/2', large: 'sm:w-3/4', full: '' } as const
 const IMAGE_POSITION = { left: 'sm:float-left sm:mr-6 sm:mb-4', center: 'mx-auto', right: 'sm:float-right sm:ml-6 sm:mb-4' } as const
-const GALLERY_COLUMNS = { 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-3', 4: 'sm:grid-cols-4' } as const
 const COLUMN_COUNT = { 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-3' } as const
 
 const CALLOUTS = {
@@ -63,23 +63,7 @@ function Block({ block }: { block: NewsBlock }) {
     case 'gallery': {
       const images = block.images.filter((image) => safeImageSrc(image.src))
       if (!images.length) return null
-      return (
-        <div className={cn('clear-both grid grid-cols-2 gap-3', GALLERY_COLUMNS[block.columns])}>
-          {images.map((image, index) => (
-            <figure key={index}>
-              <a href={image.src} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-md border border-stone-700 transition-colors hover:border-gold-500/60">
-                {/* eslint-disable-next-line @next/next/no-img-element -- news images are uploads served by the API */}
-                <img src={image.src} alt={image.alt} loading="lazy" className="aspect-video w-full object-cover" />
-              </a>
-              {image.caption.trim() && (
-                <figcaption className="mt-1.5 text-center text-xs text-text-muted">
-                  <RichInline text={image.caption} />
-                </figcaption>
-              )}
-            </figure>
-          ))}
-        </div>
-      )
+      return <NewsGallery images={images} columns={block.columns} />
     }
 
     case 'list': {
