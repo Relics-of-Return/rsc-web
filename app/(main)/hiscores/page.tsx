@@ -8,8 +8,8 @@ import { Pagination } from '@/components/shared/Pagination'
 import { SkillIcon } from '@/components/skills/SkillIcon'
 import { Container } from '@/components/ui/Container'
 import { SectionTitle } from '@/components/ui/SectionTitle'
-import { HISCORE_SKILLS, hiscoreSkillOrder, skillLabel } from '@/data/skills'
-import type { HiscoresData, PlayerRanksData } from '@/lib/types'
+import { HISCORE_SKILLS, experienceForLevel, skillLabel } from '@/data/skills'
+import type { HiscoresData, PlayerRank, PlayerRanksData } from '@/lib/types'
 import { cn, formatNumber, formatUsername } from '@/lib/utils'
 import { fetchWwwJson } from '@/lib/www'
 
@@ -79,10 +79,19 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
       loadError = true
     }
 
-    const rankEntries = ranks
-      ? Object.entries(
-          ranks as Record<string, { rank: number; level: number; experience: number }>,
-        ).sort(([a], [b]) => hiscoreSkillOrder(a) - hiscoreSkillOrder(b))
+    const rankEntries: [string, PlayerRank][] | null = ranks
+      ? [
+          ...HISCORE_SKILLS.map((entry): [string, PlayerRank] => [
+            entry,
+            (ranks as Record<string, PlayerRank>)[entry] ??
+              (entry === 'hits'
+                ? { rank: 0, level: 10, experience: experienceForLevel(10) }
+                : { rank: 0, level: 1, experience: 0 }),
+          ]),
+          ...Object.entries(ranks as Record<string, PlayerRank>).filter(
+            ([entry]) => !HISCORE_SKILLS.includes(entry),
+          ),
+        ]
       : null
 
     return (
