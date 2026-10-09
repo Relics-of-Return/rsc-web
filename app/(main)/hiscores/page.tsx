@@ -197,7 +197,7 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
         description={
           mode === 'ironman'
             ? 'Ironman accounts ranked among themselves. Their helms are tempered by the Achievement Diaries.'
-            : 'Live rankings across all 18 skills, straight from the game server.'
+            : 'Live rankings across all 19 skills, straight from the game server.'
         }
       />
 

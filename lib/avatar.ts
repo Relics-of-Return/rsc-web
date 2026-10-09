@@ -342,6 +342,61 @@ async function drawSlot(
   return { image, shift: shifts[spriteID] || { x: 0, y: 0 } }
 }
 
+// the parts are drawn where the game puts them, in a frame that leaves room on
+// one side for a weapon the player may not be holding, so the figure ends up
+// off-centre in the canvas. the website only ever shows the figure on its own,
+// so the finished canvas is trimmed to the pixels actually drawn and centred,
+// which is what puts the character in the middle of its box
+function centreContent(composite: HTMLCanvasElement): HTMLCanvasElement {
+  const context = composite.getContext('2d')!
+
+  const { data } = context.getImageData(0, 0, composite.width, composite.height)
+
+  let minX = composite.width
+  let minY = composite.height
+  let maxX = -1
+  let maxY = -1
+
+  for (let y = 0; y < composite.height; y++) {
+    for (let x = 0; x < composite.width; x++) {
+      if (data[(y * composite.width + x) * 4 + 3] === 0) {
+        continue
+      }
+
+      if (x < minX) minX = x
+      if (y < minY) minY = y
+      if (x > maxX) maxX = x
+      if (y > maxY) maxY = y
+    }
+  }
+
+  // nothing was drawn: an appearance whose sprites all failed to load, which
+  // leaves the empty canvas for the component to show its message over
+  if (maxX < 0) {
+    return composite
+  }
+
+  const width = maxX - minX + 1
+  const height = maxY - minY + 1
+
+  const centred = makeCanvas(AVATAR_WIDTH, AVATAR_HEIGHT)
+  const centredContext = centred.getContext('2d')!
+
+  centredContext.drawImage(
+    composite,
+    minX,
+    minY,
+    width,
+    height,
+    Math.round((AVATAR_WIDTH - width) / 2),
+    Math.round((AVATAR_HEIGHT - height) / 2),
+    width,
+    height,
+  )
+
+  return centred
+}
+
 // draws a player avatar and resolves to a canvas of it
 async function player(options: PlayerOptions): Promise<HTMLCanvasElement> {
   const loaded = await loadDefinitions()
@@ -383,10 +438,11 @@ async function player(options: PlayerOptions): Promise<HTMLCanvasElement> {
     }
   }
 
+  const centred = centreContent(composite)
   const scale = Math.max(1, Math.floor(character.scale) || 1)
 
   if (scale === 1) {
-    return composite
+    return centred
   }
 
   // scale after compositing, with smoothing off, so the sprites stay
@@ -395,7 +451,7 @@ async function player(options: PlayerOptions): Promise<HTMLCanvasElement> {
   const scaledContext = scaled.getContext('2d')!
 
   scaledContext.imageSmoothingEnabled = false
-  scaledContext.drawImage(composite, 0, 0, scaled.width, scaled.height)
+  scaledContext.drawImage(centred, 0, 0, scaled.width, scaled.height)
 
   return scaled
 }

@@ -17,6 +17,7 @@ export const DEFAULT_SKILLS = [
   'herblaw',
   'agility',
   'thieving',
+  'construction',
 ]
 
 /**
@@ -64,6 +65,7 @@ const SKILL_ICON_PATHS: Record<string, string> = {
   thieving: '/skills/thieving.webp',
   hits: '/skills/hitpoints.png',
   overall: '/skills/overall.webp',
+  construction: '/skills/construction.png',
 }
 
 /** Public icon path for a skill, or `undefined` when no icon exists. */
@@ -71,3 +73,27 @@ export function skillIconPath(skill: string): string | undefined {
   return SKILL_ICON_PATHS[skill]
 }
 
+
+/** A character's combat level from its skill levels, by the game's own formula (rsc-server's getCombatLevel). */
+export function combatLevel(levels: Partial<Record<string, number>>): number {
+  const level = (skill: string, base = 1) => levels[skill] ?? base
+  const offence = (level('attack') + level('strength')) * 0.25
+  const defence = (level('defense') + level('hits', 10)) * 0.25
+  const magic = (level('prayer') + level('magic')) * 0.125
+  const ranged = level('ranged') * 0.375
+
+  return Math.floor(defence + magic + Math.max(offence, ranged))
+}
+
+export const MAX_LEVEL = 99
+
+/** The experience a level starts at, on RuneScape's curve (1 = 0, 2 = 83, 99 = 13,034,431). */
+export function experienceForLevel(level: number): number {
+  let points = 0
+
+  for (let lvl = 1; lvl < level; lvl += 1) {
+    points += Math.floor(lvl + 300 * 2 ** (lvl / 7))
+  }
+
+  return Math.floor(points / 4)
+}
