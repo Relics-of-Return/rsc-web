@@ -1,13 +1,12 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/hooks/useAuth'
+import { SITE_URL } from '@/lib/config'
 import { SITE_NAME, SITE_TAGLINE } from '@/lib/constants'
 import { alagard } from '@/lib/fonts'
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://127.0.0.1:3000'
-
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: `${SITE_NAME} - ${SITE_TAGLINE}`,
     template: `%s - ${SITE_NAME}`,
@@ -27,7 +26,7 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     title: SITE_NAME,
     description: SITE_TAGLINE,
-    url: siteUrl,
+    url: SITE_URL,
   },
   twitter: {
     card: 'summary',
