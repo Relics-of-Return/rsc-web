@@ -1,15 +1,22 @@
 import type { MetadataRoute } from 'next'
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://127.0.0.1:3000'
+import { SITE_URL } from '@/lib/config'
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: '*',
       allow: '/',
-      // staff tools and the BFF routes are not public pages
-      disallow: ['/admin', '/api/'],
+      // Private endpoints
+      disallow: [
+        '/api/',
+        '/downloads/',
+        '/account',
+        '/admin',
+        '/map/edit',
+        '/models/edit',
+      ],
     },
-    sitemap: `${siteUrl}/sitemap.xml`,
+    sitemap: `${SITE_URL}/sitemap.xml`,
   }
 }
