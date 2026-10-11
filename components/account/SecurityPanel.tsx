@@ -161,7 +161,7 @@ export function SecurityPanel({ username, worlds }: { username: string; worlds: 
                         {world.changed === true
                           ? 'changed too.'
                           : world.changed === null
-                            ? "couldn't be reached, so it still has your old password. Change it again later to update it."
+                            ? "couldn't be reached just now. It will be given your new password as soon as it's back; if that takes more than 15 minutes, it keeps the old one."
                             : world.reason === 'no-account'
                               ? 'no character yet; your first login there uses the new password.'
                               : 'its character had a different password, so it keeps that one.'}
