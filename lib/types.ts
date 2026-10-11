@@ -88,6 +88,8 @@ export interface PlayerRanksData {
   staffRank?: number
   /** Account type: 0 standard, 1 Ironman. */
   accountMode?: number
+  /** Quest points. */
+  questPoints?: number
   /** How far the player's achievement diaries have got. */
   diaries?: DiarySummary | null
   /** The character sprites, colours and equipment to draw the avatar with. */
