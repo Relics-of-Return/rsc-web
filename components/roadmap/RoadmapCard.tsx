@@ -1,57 +1,35 @@
 'use client'
 
+import Image from 'next/image'
 import { useState } from 'react'
 
-import { ProgressBar } from '@/components/roadmap/ProgressBar'
-import type { RoadmapItem, RoadmapStatus } from '@/lib/roadmap-types'
+import { areaLabels } from '@/data/roadmap'
+import type { RoadmapItem } from '@/lib/roadmap-types'
 import { cn } from '@/lib/utils'
 
-const statusColors: Record<RoadmapStatus, string> = {
-  Complete: 'bg-moss/20 text-moss border-moss/30',
-  Testing: 'bg-gold-500/20 text-gold-500 border-gold-500/30',
-  'In Progress': 'bg-rune-blue/20 text-rune-blue border-rune-blue/30',
-  'Not Started': 'bg-ember/20 text-ember border-ember/30',
-}
+export function RoadmapCard({ item }: { item: RoadmapItem }) {
+  const [open, setOpen] = useState(false)
+  const hasDetails = Boolean(item.image || item.highlights?.length || item.remaining?.length)
 
-interface RoadmapCardProps {
-  item: RoadmapItem
-}
-
-export function RoadmapCard({ item }: RoadmapCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
-
-  const hasDetails = Boolean(
-    item.completedFeatures?.length ||
-      item.plannedFeatures?.length ||
-      item.knownIssues?.length ||
-      item.notes?.length
-  )
-
-  const header = (
+  const body = (
     <>
       <div className="min-w-0 flex-1 text-left">
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="truncate text-sm font-medium text-text-primary">{item.name}</h3>
-          <span
-            className={cn(
-              'flex-shrink-0 rounded border px-2 py-0.5 text-xs',
-              statusColors[item.status]
-            )}
-          >
-            {item.status}
-          </span>
-        </div>
-        <ProgressBar progress={item.progress} className="mt-1.5" />
+        <p className="text-[11px] uppercase tracking-[0.14em] text-text-muted">
+          {areaLabels[item.area]}
+        </p>
+        <h3 className="mt-0.5 text-base font-semibold text-text-primary">{item.title}</h3>
+        <p className="mt-1 text-sm text-text-secondary">{item.summary}</p>
       </div>
       {hasDetails && (
         <svg
           className={cn(
-            'h-4 w-4 flex-shrink-0 text-text-secondary transition-transform',
-            isExpanded && 'rotate-180'
+            'mt-1 h-4 w-4 flex-shrink-0 text-text-secondary transition-transform',
+            open && 'rotate-180'
           )}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
@@ -60,74 +38,53 @@ export function RoadmapCard({ item }: RoadmapCardProps) {
   )
 
   return (
-    <div className="rounded-lg border border-stone-700 bg-stone-800/30">
+    <article className="rounded-lg border border-stone-700 bg-stone-800/50">
       {hasDetails ? (
         <button
           type="button"
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-stone-700/30"
-          aria-expanded={isExpanded}
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          className="flex w-full items-start gap-3 p-4 text-left transition-colors hover:bg-stone-700/30"
         >
-          {header}
+          {body}
         </button>
       ) : (
-        <div className="flex w-full items-center gap-3 p-3">{header}</div>
+        <div className="flex items-start gap-3 p-4">{body}</div>
       )}
 
-      {isExpanded && (
-        <div className="space-y-3 border-t border-stone-700/50 px-3 pb-3 pt-3">
-          <p className="text-sm text-text-secondary">{item.description}</p>
-
-          {item.completedFeatures && item.completedFeatures.length > 0 && (
-            <div>
-              <h4 className="mb-1 text-xs font-semibold text-moss">Completed</h4>
-              <ul className="space-y-0.5 text-xs text-text-muted">
-                {item.completedFeatures.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-1.5">
-                    <span className="text-moss">✓</span>
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+      {open && (
+        <div className="space-y-3 border-t border-stone-700/60 p-4 text-sm">
+          {item.image && (
+            <Image
+              src={item.image.src}
+              alt={item.image.alt}
+              width={item.image.width}
+              height={item.image.height}
+              className="h-auto w-full rounded border border-stone-700"
+            />
           )}
-
-          {item.plannedFeatures && item.plannedFeatures.length > 0 && (
-            <div>
-              <h4 className="mb-1 text-xs font-semibold text-rune-blue">Planned</h4>
-              <ul className="space-y-0.5 text-xs text-text-muted">
-                {item.plannedFeatures.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-1.5">
-                    <span className="text-rune-blue">○</span>
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {item.highlights && item.highlights.length > 0 && (
+            <ul className="space-y-1 text-text-secondary">
+              {item.highlights.map((h) => (
+                <li key={h} className="flex gap-2">
+                  <span className="text-gold-500" aria-hidden="true">
+                    ✓
+                  </span>
+                  <span>{h}</span>
+                </li>
+              ))}
+            </ul>
           )}
-
-          {item.knownIssues && item.knownIssues.length > 0 && (
+          {item.remaining && item.remaining.length > 0 && (
             <div>
-              <h4 className="mb-1 text-xs font-semibold text-ember">Known Issues</h4>
-              <ul className="space-y-0.5 text-xs text-text-muted">
-                {item.knownIssues.map((issue, i) => (
-                  <li key={i} className="flex items-start gap-1.5">
-                    <span className="text-ember">!</span>
-                    <span>{issue}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {item.notes && item.notes.length > 0 && (
-            <div>
-              <h4 className="mb-1 text-xs font-semibold text-text-secondary">Notes</h4>
-              <ul className="space-y-0.5 text-xs text-text-muted">
-                {item.notes.map((note, i) => (
-                  <li key={i} className="flex items-start gap-1.5">
-                    <span>•</span>
-                    <span>{note}</span>
+              <h4 className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-ember">
+                Still to do
+              </h4>
+              <ul className="space-y-1 text-text-muted">
+                {item.remaining.map((r) => (
+                  <li key={r} className="flex gap-2">
+                    <span aria-hidden="true">○</span>
+                    <span>{r}</span>
                   </li>
                 ))}
               </ul>
@@ -135,6 +92,6 @@ export function RoadmapCard({ item }: RoadmapCardProps) {
           )}
         </div>
       )}
-    </div>
+    </article>
   )
 }
