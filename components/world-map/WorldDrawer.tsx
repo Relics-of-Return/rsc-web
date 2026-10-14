@@ -22,12 +22,13 @@ import { ObjectList } from '@/components/world-map/ObjectList'
 import { ItemList, NpcList } from '@/components/world-map/SpawnList'
 import { TileInspector } from '@/components/world-map/TileInspector'
 import { ToolPanel } from '@/components/world-map/ToolPanel'
-import type { Tool, ToolSettings } from '@/components/world-map/tools'
+import { TOOLS, type Tool, type ToolSettings } from '@/components/world-map/tools'
 import type { MapLayers } from '@/components/world-map/WorldCanvas'
 import {
   DISTANCE_MAX,
   DRAW_DISTANCE_MAX,
   DRAW_DISTANCE_MIN,
+  GROUND_SIZES,
   type PreviewCamera,
   type RenderSettings,
   type WorldPreviewController,
@@ -101,6 +102,8 @@ interface WorldDrawerProps {
   onClearArea: () => void
   /** The lighting tool's panel. */
   lightingPanel?: React.ReactNode
+  /** The PCG tool's panel. */
+  pcgPanel?: React.ReactNode
 
   // Inspector & Selection
   selected: { x: number; y: number } | null
@@ -172,6 +175,7 @@ export function WorldDrawer({
   onTurnArea,
   onClearArea,
   lightingPanel,
+  pcgPanel,
   selected,
   selectedSectorExists,
   tileEditData,
@@ -459,6 +463,25 @@ export function WorldDrawer({
                     className="accent-gold-500 h-4 w-4 rounded cursor-pointer"
                   />
                 </label>
+                {renderSettings.ground && (
+                  <label
+                    className="flex items-center justify-between gap-2 py-1 text-stone-300"
+                    title="How sharp the grass, mud, sand and roads are. Larger needs more video memory; the game's default is 1024"
+                  >
+                    <span>Ground texture size</span>
+                    <select
+                      value={renderSettings.groundSize}
+                      onChange={(e) => onRenderSettingsChange({ groundSize: Number(e.target.value) })}
+                      className="rounded-md border border-white/10 bg-black/40 px-2 py-1 text-xs text-stone-200 focus:border-gold-500/60 focus:outline-none"
+                    >
+                      {GROUND_SIZES.map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
 
                 {/* HD lighting: the sky setting's sun and its shadows */}
                 <label className="flex items-center justify-between py-1 text-stone-300 cursor-pointer">
@@ -756,7 +779,7 @@ export function WorldDrawer({
             >
               <span className="flex items-center gap-2">
                 <Wrench className="h-3.5 w-3.5 text-gold-400" />
-                <span className="capitalize">Tool: {tool}</span>
+                <span>Tool: {TOOLS.find((t) => t.id === tool)?.label ?? tool}</span>
               </span>
               <ChevronDown
                 className={cn(
@@ -782,6 +805,7 @@ export function WorldDrawer({
                   onTurn={onTurnArea}
                   onClearArea={onClearArea}
                   lighting={lightingPanel}
+                  pcg={pcgPanel}
                 />
               </div>
             )}

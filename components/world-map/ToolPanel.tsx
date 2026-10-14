@@ -42,9 +42,11 @@ interface ToolPanelProps {
   onClearArea: () => void
   /** The lighting tool's panel (LightingPanel), made by the editor. */
   lighting?: React.ReactNode
+  /** The PCG tool's panel (PcgPanel), made by the editor. */
+  pcg?: React.ReactNode
 }
 
-function Choice<T extends string | number>({
+export function Choice<T extends string | number>({
   options,
   value,
   onChange,
@@ -75,7 +77,7 @@ function Choice<T extends string | number>({
   )
 }
 
-function Slider({
+export function Slider({
   label,
   value,
   min,
@@ -491,5 +493,8 @@ export function ToolPanel(props: ToolPanelProps) {
 
     case 'lighting':
       return <>{props.lighting ?? null}</>
+
+    case 'pcg':
+      return <>{props.pcg ?? null}</>
   }
 }

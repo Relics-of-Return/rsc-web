@@ -18,6 +18,7 @@ import {
   SplitSquareVertical,
   Sun,
   Trash2,
+  Trees,
   Undo2,
   Users,
   View,
@@ -60,6 +61,7 @@ const TOOL_ICONS: Record<Tool, React.ComponentType<{ className?: string }>> = {
   items: Package,
   area: Crop,
   lighting: Sun,
+  pcg: Trees,
 }
 
 export function WorldToolbar({
@@ -96,12 +98,16 @@ export function WorldToolbar({
         {TOOLS.map((t) => {
           const Icon = TOOL_ICONS[t.id] ?? Box
           const isActive = tool === t.id
+          // a tool on a number key is on that F key too; one on a letter is not
+          const keyHint = /^[0-9]$/.test(t.key)
+            ? `Press ${t.key} or F${t.key === '0' ? '10' : t.key}`
+            : `Press ${t.key}`
 
           return (
             <button
               key={t.id}
               type="button"
-              title={`${t.label} (Press ${t.key} or F${t.key === '0' ? '10' : t.key}) — ${t.hint}`}
+              title={`${t.label} (${keyHint}) — ${t.hint}`}
               onClick={() => onSelectTool(t.id)}
               className={cn(
                 'group relative flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-medium transition-all duration-150 active:scale-95',

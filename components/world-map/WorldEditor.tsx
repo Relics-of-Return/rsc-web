@@ -31,6 +31,7 @@ import {
 import { WorldToolbar, type ViewLayoutMode } from '@/components/world-map/WorldToolbar'
 import { WorldDrawer, type InspectorTab } from '@/components/world-map/WorldDrawer'
 import { LightingPanel } from '@/components/world-map/LightingPanel'
+import { PCG_UI, PcgPanel, type PcgUi } from '@/components/world-map/PcgPanel'
 import { useLightingAreas } from '@/components/world-map/useLightingAreas'
 import { areaAt, rectOf } from '@/lib/landscape/lighting'
 import { SplitSquareVertical, X } from 'lucide-react'
@@ -56,6 +57,23 @@ import {
   type Clip,
   type Turn,
 } from '@/lib/landscape/geometry'
+import {
+  NO_BIOMES,
+  PCG_GRAPHS,
+  areaOfDomain,
+  coverOf,
+  reachOf,
+  readSetup,
+  runPcg,
+  setupOf,
+  type PcgBiomeSet,
+  type PcgDomain,
+  type PcgGraph,
+  type PcgManualEdit,
+  type PcgResult,
+  type PcgRun,
+  type PcgToolTag,
+} from '@/lib/landscape/pcg'
 import {
   MIN_REGION_X,
   MIN_REGION_Y,
@@ -130,6 +148,22 @@ function sectorsOfArea(area: TileArea): SectorKey[] {
   }
 
   return [...keys]
+}
+
+/** What the PCG tool generated last, with everything it was generated from. */
+interface PcgMade {
+  result: PcgResult
+  graph: PcgGraph
+  domain: PcgDomain
+  edits: PcgManualEdit[]
+  biomes: PcgBiomeSet
+  /** The working copies it read. */
+  read: Map<SectorKey, Working>
+}
+
+/** What tells one scenery object from every other. */
+function signature(object: PlacedObject) {
+  return `${object.id},${object.x},${object.y},${object.direction}`
 }
 
 /** Heights are 7 bits doubled: only even values 0-254 exist. */
@@ -210,6 +244,31 @@ export function WorldEditor() {
   // dragged out for one
   const lighting = useLightingAreas(tool === 'lighting' || show.lighting)
   const [lightingDraft, setLightingDraft] = useState<TileArea | null>(null)
+
+  // the PCG tool: the working copy of a graph, the rectangle being dragged
+  // out for it, the area it generates over, the points changed by hand, and
+  // what was generated last
+  const [pcg, setPcg] = useState<PcgGraph>(PCG_GRAPHS[0])
+  const [pcgDraft, setPcgDraft] = useState<TileArea | null>(null)
+  const [pcgDomain, setPcgDomain] = useState<PcgDomain | null>(null)
+  const [pcgEdits, setPcgEdits] = useState<PcgManualEdit[]>([])
+  const [pcgUi, setPcgUi] = useState<PcgUi>(PCG_UI)
+  const [pcgMade, setPcgMade] = useState<PcgMade | null>(null)
+  const [pcgProgress, setPcgProgress] = useState<{ done: number; total: number } | null>(null)
+  // a cancelled or failed run is not started again until one of these changes
+  const [pcgHeld, setPcgHeld] = useState<Pick<
+    PcgMade,
+    'graph' | 'domain' | 'edits' | 'biomes'
+  > | null>(null)
+  // how the area is drawn, the corners of a polygon or path clicked so far,
+  // and a path's width
+  const [pcgTool, setPcgTool] = useState<PcgToolTag>('VolumeTool')
+  const [pcgDrawing, setPcgDrawing] = useState<{ x: number; y: number }[] | null>(null)
+  const [pcgWidth, setPcgWidth] = useState(1)
+  const [pcgBiomes, setPcgBiomes] = useState<PcgBiomeSet>(NO_BIOMES)
+  // the runs on record, and the ones applied since the last save
+  const [pcgRuns, setPcgRuns] = useState<PcgRun[]>([])
+  const [pcgPending, setPcgPending] = useState<PcgRun[]>([])
 
   const [thumbnail, setThumbnail] = useState<
     ((kind: 'object' | 'door', id: number) => string | null) | null
@@ -347,19 +406,56 @@ export function WorldEditor() {
     }
   }, [world, openKeys])
 
+  // what the PCG tool would place, for the 3D view to show as Apply would
+  // leave it
+  const pcgGhost = useMemo(
+    () =>
+      tool === 'pcg' && pcgUi.in3d && pcgMade && pcgMade.domain === pcgDomain
+        ? {
+            bySector: pcgMade.result.bySector,
+            leaving: pcgMade.graph.parameters.replace ? coverOf(pcgMade.domain) : null,
+          }
+        : null,
+    [tool, pcgUi.in3d, pcgMade, pcgDomain],
+  )
+
   const preview = useMemo(() => {
     const sectors: { ref: { plane: number; x: number; y: number }; tiles: Working['tiles'] }[] = []
     const objects: PlacedObject[] = [...(outside?.objects ?? [])]
     const wallObjects: PlacedObject[] = [...(outside?.wallObjects ?? [])]
 
-    for (const sector of open.values()) {
-      sectors.push({ ref: sector.loaded, tiles: sector.working.tiles })
-      objects.push(...sector.working.objects)
+    for (const [key, sector] of open) {
+      const placed = pcgGhost?.bySector.get(key)
+      const leaving = pcgGhost?.leaving
+      let { tiles, objects: scenery } = sector.working
+
+      if (leaving) {
+        scenery = scenery.filter((object) => !leaving(object.x, object.y))
+      }
+
+      if (placed) {
+        // the client turns scenery by its tile's facing
+        const direction = tiles.direction.slice()
+
+        for (const object of placed) {
+          const index = gameToTile(sector.loaded, object.x, object.y)
+
+          if (index !== null) {
+            direction[index] = object.direction
+          }
+        }
+
+        tiles = { ...tiles, direction }
+        scenery = [...scenery, ...placed]
+      }
+
+      sectors.push({ ref: sector.loaded, tiles })
+      objects.push(...scenery)
       wallObjects.push(...sector.working.wallObjects)
     }
 
     return { sectors, objects, wallObjects }
-  }, [open, outside])
+  }, [open, outside, pcgGhost])
 
   // ## loading
 
@@ -550,11 +646,14 @@ export function WorldEditor() {
 
   const canvasMode: 'select' | 'paint' | 'area' = pasting
     ? 'paint'
-    : tool === 'area' || tool === 'lighting'
+    : tool === 'area' || tool === 'lighting' || (tool === 'pcg' && pcgTool === 'VolumeTool')
       ? 'area'
-      : placing
-        ? 'paint'
-        : 'select'
+      : // a polygon or a path is clicked out corner by corner
+        tool === 'pcg' && pcgTool !== 'PaintTool'
+        ? 'select'
+        : placing
+          ? 'paint'
+          : 'select'
 
   const pick: 'tile' | 'edge' =
     !pasting &&
@@ -562,7 +661,12 @@ export function WorldEditor() {
       ? 'edge'
       : 'tile'
 
-  const brushed = tool === 'height' || tool === 'underlay' || tool === 'overlay' || tool === 'roofs'
+  const brushed =
+    tool === 'height' ||
+    tool === 'underlay' ||
+    tool === 'overlay' ||
+    tool === 'roofs' ||
+    (tool === 'pcg' && pcgTool === 'PaintTool')
 
   const stroke = useRef({ n: 0, flatten: 0 })
 
@@ -1084,6 +1188,387 @@ export function WorldEditor() {
     }
   }
 
+  // ## PCG
+
+  // the sectors under the area, and under what a bounds expansion adds to it
+  const pcgExpansion = pcg.parameters.boundsExpansion
+  const pcgKeys = useMemo(() => {
+    const reach = pcgDomain && reachOf(pcgDomain, pcgExpansion)
+
+    return reach ? sectorsOfArea(reach) : []
+  }, [pcgDomain, pcgExpansion])
+
+  // whether what was generated last is of the graph, the area, the manual
+  // edits and the map as they are now
+  const pcgFresh =
+    !!pcgMade &&
+    pcgMade.graph === pcg &&
+    pcgMade.domain === pcgDomain &&
+    pcgMade.edits === pcgEdits &&
+    pcgMade.biomes === pcgBiomes &&
+    [...pcgMade.read].every(([key, working]) => open.get(key)?.working === working)
+
+  const pcgStopped =
+    !!pcgHeld &&
+    pcgHeld.graph === pcg &&
+    pcgHeld.domain === pcgDomain &&
+    pcgHeld.edits === pcgEdits &&
+    pcgHeld.biomes === pcgBiomes
+
+  // where the view is, for the cells nearest it to be generated first
+  const pcgSource = useRef({ x: 0, y: 0 })
+
+  useEffect(() => {
+    if (view) {
+      pcgSource.current = { x: view.x, y: view.y }
+    }
+  })
+
+  // generation is an effect of the area, the graph, the manual edits and the
+  // open sectors, so the preview follows them all. it runs a layer on a grid
+  // cell at a time, a frame's worth each frame: the page stays alive, and a
+  // run that a newer one overtakes is simply dropped
+  useEffect(() => {
+    if (tool !== 'pcg' || !pcgDomain || !palette || pcgFresh || pcgStopped) {
+      return
+    }
+
+    const made = { graph: pcg, domain: pcgDomain, edits: pcgEdits, biomes: pcgBiomes }
+    const keys = pcgKeys.filter((key) => existing.has(key))
+    const failed = (error: unknown) => {
+      setPcgProgress(null)
+      setPcgHeld(made)
+      setNotice({
+        kind: 'error',
+        text: error instanceof Error ? error.message : 'could not generate',
+      })
+    }
+
+    if (!keys.every((key) => open.has(key))) {
+      // the effect runs again when they have arrived
+      ensure(keys).catch(failed)
+      return
+    }
+
+    let frame = 0
+
+    const handle = window.setTimeout(() => {
+      const read = new Map(keys.map((key) => [key, open.get(key)!.working]))
+      const run = runPcg({
+        ...made,
+        manualEdits: pcgEdits,
+        sectors: read,
+        palette,
+        generationSource: pcgSource.current,
+        unsaved: changed.keys(),
+      })
+
+      const step = () => {
+        const started = performance.now()
+
+        try {
+          let next = run.next()
+
+          while (!next.done && performance.now() - started < 12) {
+            next = run.next()
+          }
+
+          if (next.done) {
+            setPcgMade({ ...made, result: next.value, read })
+            setPcgProgress(null)
+          } else {
+            setPcgProgress(next.value)
+            frame = requestAnimationFrame(step)
+          }
+        } catch (error) {
+          failed(error)
+        }
+      }
+
+      step()
+    }, 150)
+
+    return () => {
+      window.clearTimeout(handle)
+      cancelAnimationFrame(frame)
+    }
+  }, [
+    tool,
+    pcgDomain,
+    pcg,
+    pcgEdits,
+    pcgBiomes,
+    pcgKeys,
+    pcgFresh,
+    pcgStopped,
+    open,
+    changed,
+    existing,
+    palette,
+    ensure,
+  ])
+
+  // what the map shows: the last result for this area, even while a newer
+  // one is on its way
+  const pcgResult = pcgMade && pcgMade.domain === pcgDomain ? pcgMade.result : null
+  const pcgLayerIds = [
+    ...new Set([
+      ...pcg.layers.map((layer) => layer.id),
+      ...Object.keys(pcgResult?.stats.byLayer ?? {}),
+    ]),
+  ].join()
+  // Debug: the layers switched to debug alone, or every layer when none is
+  const pcgDebugged = pcg.layers
+    .filter((layer) => layer.debug)
+    .map((layer) => layer.id)
+    .join()
+
+  const pcgPoints = useMemo(() => {
+    if (!pcgResult || !palette) {
+      return null
+    }
+
+    const debugged = new Set(pcgDebugged ? pcgDebugged.split(',') : [])
+
+    return pcgResult.points
+      .filter(
+        (point) =>
+          (pcgUi.showCulled || !point.culled) && (!debugged.size || debugged.has(point.layer)),
+      )
+      .map(({ x, y, bounds, density, layer, culled, attributes }) => ({
+        x,
+        y,
+        bounds,
+        density,
+        layer,
+        culled,
+        blocked: palette.objectInfo[String(attributes.objectId)]?.type === 'blocked',
+      }))
+  }, [pcgResult, palette, pcgDebugged, pcgUi.showCulled])
+
+  const pcgShown = useMemo(
+    () =>
+      pcgPoints
+        ? {
+            layers: pcgLayerIds.split(','),
+            points: pcgPoints,
+            colourBy: pcgUi.colourBy,
+            showCulled: pcgUi.showCulled,
+            highlight: pcgUi.highlight,
+          }
+        : undefined,
+    [pcgPoints, pcgLayerIds, pcgUi.colourBy, pcgUi.showCulled, pcgUi.highlight],
+  )
+
+  // the area as the map draws it when it is not a rectangle: the tiles it
+  // covers, and the corners clicked so far
+  const pcgOutline = useMemo(() => {
+    const drawn: PcgDomain | null = pcgDrawing
+      ? pcgTool === 'SplineTool'
+        ? { tool: 'SplineTool', points: pcgDrawing, width: pcgWidth }
+        : { tool: 'SplineSurfaceTool', points: pcgDrawing }
+      : pcgDomain
+
+    if (!drawn || drawn.tool === 'VolumeTool') {
+      return undefined
+    }
+
+    if (drawn.tool === 'PaintTool') {
+      return { tiles: drawn.tiles, line: [], closed: false }
+    }
+
+    const around = areaOfDomain(drawn)
+    const covers = coverOf(drawn)
+    const tiles: { x: number; y: number }[] = []
+
+    if (around) {
+      for (let x = around.x; x < around.x + around.width; x++) {
+        for (let y = around.y; y < around.y + around.height; y++) {
+          if (covers(x, y)) {
+            tiles.push({ x, y })
+          }
+        }
+      }
+    }
+
+    return { tiles, line: drawn.points, closed: drawn.tool === 'SplineSurfaceTool' }
+  }, [pcgDrawing, pcgDomain, pcgTool, pcgWidth])
+
+  const pcgThumb = useMemo(
+    () => (thumbnail ? (id: number) => thumbnail('object', id) : null),
+    [thumbnail],
+  )
+
+  // the runs on record, read whenever the tool is picked up
+  useEffect(() => {
+    if (tool !== 'pcg') {
+      return
+    }
+
+    let cancelled = false
+
+    fetchJson<{ runs: PcgRun[] }>('/api/landscape/pcg-runs')
+      .then(({ runs }) => {
+        if (!cancelled) {
+          setPcgRuns(runs)
+        }
+      })
+      .catch(() => {
+        // the tool works without them
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [tool])
+
+  /** A click that asks what happened on a tile: the Attributes list narrows to it. */
+  const inspectPcg = (at: { x: number; y: number }) =>
+    setPcgUi((last) => ({
+      ...last,
+      inspect: last.inspect ?? last.selectedLayer ?? pcg.layers[0]?.id ?? null,
+      inspectTile: { x: at.x, y: at.y },
+      highlight: { x: at.x, y: at.y },
+    }))
+
+  /** The Paint tool: the brush's tiles join the area, or leave it with Shift held. */
+  const paintPcg = (at: PointerTile) => {
+    const brush = footprint(at, settings.size, settings.round)
+
+    setPcgDomain((domain) => {
+      const tiles = new Map(
+        (domain?.tool === 'PaintTool' ? domain.tiles : []).map((tile) => [`${tile.x},${tile.y}`, tile]),
+      )
+
+      for (const tile of brush) {
+        if (at.shift) {
+          tiles.delete(`${tile.x},${tile.y}`)
+        } else {
+          tiles.set(`${tile.x},${tile.y}`, tile)
+        }
+      }
+
+      return tiles.size ? { tool: 'PaintTool', tiles: [...tiles.values()] } : null
+    })
+  }
+
+  /** A press on the map with the PCG tool in hand. */
+  const pressPcg = (at: PointerTile) => {
+    if (at.alt) {
+      inspectPcg(at)
+    } else if (pcgTool === 'PaintTool') {
+      paintPcg(at)
+    } else if (pcgTool !== 'VolumeTool') {
+      // one more corner, unless it is the last one again
+      setPcgDrawing((points) => {
+        const last = points?.[points.length - 1]
+
+        return last && last.x === at.x && last.y === at.y
+          ? points
+          : [...(points ?? []), { x: at.x, y: at.y }]
+      })
+    }
+  }
+
+  /** The corners clicked so far become the area, if there are enough of them. */
+  const finishPcg = () => {
+    if (!pcgDrawing) {
+      return
+    }
+
+    if (pcgDrawing.length >= (pcgTool === 'SplineSurfaceTool' ? 3 : 2)) {
+      // the manual edits were of the old area's points
+      setPcgEdits([])
+      setPcgHeld(null)
+      setPcgDomain(
+        pcgTool === 'SplineSurfaceTool'
+          ? { tool: 'SplineSurfaceTool', points: pcgDrawing }
+          : { tool: 'SplineTool', points: pcgDrawing, width: pcgWidth },
+      )
+    }
+
+    setPcgDrawing(null)
+  }
+
+  /** Cleanup: the preview and its area are dropped. Nothing had been written. */
+  const cleanupPcg = () => {
+    setPcgMade(null)
+    setPcgDrawing(null)
+    setPcgDomain(null)
+    setPcgEdits([])
+    setPcgProgress(null)
+    setPcgHeld(null)
+    setPcgUi((last) => ({ ...last, inspectTile: null, highlight: null }))
+  }
+
+  /**
+   * Apply: the preview becomes scenery in the sectors' working copies, as one
+   * undo step. From then on it is ordinary scenery, and the tool no longer
+   * knows it from what was put down by hand. With Replace on, the scenery
+   * that stood in the area goes first.
+   */
+  const applyPcg = () => {
+    if (!pcgMade || !pcgFresh || pcgProgress || pcgMade.result.stats.errors.length) {
+      return
+    }
+
+    const { result, read, graph, domain } = pcgMade
+    const { bySector, stats, removes } = result
+    const leaving = graph.parameters.replace ? coverOf(domain) : null
+
+    edit(`pcg:${graph.parameters.seed}:${Date.now()}`, (current) => {
+      const out = changes(current)
+
+      for (const key of new Set([...read.keys(), ...bySector.keys()])) {
+        const placed = bySector.get(key) ?? []
+        const going =
+          !!leaving && !!out.get(key)?.objects.some((object) => leaving(object.x, object.y))
+
+        if (!placed.length && !going) {
+          continue
+        }
+
+        out.spawns(key, 'objects', (list) => [
+          ...(leaving ? list.filter((object) => !leaving(object.x, object.y)) : list),
+          ...placed,
+        ])
+
+        // the client turns scenery by its tile's facing, the server by the
+        // object's: both, always
+        for (const object of placed) {
+          out.tile(object, (edit) => {
+            edit.direction = object.direction
+          })
+        }
+      }
+
+      return out.out
+    })
+
+    // what it placed, to put on record once it is saved
+    setPcgPending((last) => [
+      ...last,
+      {
+        id: `${Date.now().toString(36)}-${graph.parameters.seed}`,
+        at: new Date().toISOString(),
+        label: graph.label,
+        seed: graph.parameters.seed,
+        domain,
+        setup: setupOf(graph, pcgMade.edits, pcgMade.biomes),
+        objects: [...bySector.values()].flat(),
+      },
+    ])
+
+    // the area goes too, or the next run would land on what was just placed
+    cleanupPcg()
+    setNotice({
+      kind: 'ok',
+      text:
+        (removes ? `Removed ${removes} objects and placed ${stats.placed}. ` : `Placed ${stats.placed} objects. `) +
+        'Ctrl+Z takes it all back; Save writes it.',
+    })
+  }
+
   // ## pressing on the map, or in the 3D view
 
   const selectTile = (at: { x: number; y: number }) => {
@@ -1094,6 +1579,11 @@ export function WorldEditor() {
   const pressAt = (at: PointerTile) => {
     if (pasting) {
       stampAt(at)
+      return
+    }
+
+    if (tool === 'pcg') {
+      pressPcg(at)
       return
     }
 
@@ -1113,6 +1603,14 @@ export function WorldEditor() {
   }
 
   const dragAt = (at: PointerTile) => {
+    if (tool === 'pcg') {
+      if (!pasting && !at.alt && pcgTool === 'PaintTool') {
+        paintPcg(at)
+      }
+
+      return
+    }
+
     if (!pasting && !at.alt && canvasMode === 'paint') {
       applyTool(at, false)
     }
@@ -1181,6 +1679,42 @@ export function WorldEditor() {
         return
       }
 
+      // the number keys are all taken, so the PCG tool is on a letter
+      if (lower === 'p' && !event.altKey) {
+        event.preventDefault()
+        chooseTool('pcg')
+        return
+      }
+
+      // Unreal's node keys, on the selected layer, while the PCG tool is in hand
+      if (tool === 'pcg' && pcgUi.selectedLayer && !event.altKey && 'dea'.includes(lower)) {
+        const id = pcgUi.selectedLayer
+        const flip = (field: 'debug' | 'enabled') =>
+          setPcg((graph) => ({
+            ...graph,
+            layers: graph.layers.map((layer) =>
+              layer.id === id ? { ...layer, [field]: !layer[field] } : layer,
+            ),
+          }))
+
+        event.preventDefault()
+
+        if (lower === 'd') {
+          flip('debug')
+        } else if (lower === 'e') {
+          flip('enabled')
+        } else {
+          setPcgUi((last) => ({
+            ...last,
+            inspect: last.inspect === id ? null : id,
+            inspectTile: null,
+            highlight: null,
+          }))
+        }
+
+        return
+      }
+
       if (key === 'PageUp' || key === 'PageDown') {
         event.preventDefault()
 
@@ -1239,14 +1773,25 @@ export function WorldEditor() {
             update({ itemId: null })
           } else if (tool === 'lighting') {
             lighting.select(null)
+          } else if (tool === 'pcg' && pcgDrawing) {
+            setPcgDrawing(null)
           } else {
             setArea(null)
+          }
+          break
+        case 'Enter':
+          if (tool === 'pcg' && pcgDrawing) {
+            finishPcg()
+          } else {
+            return
           }
           break
         case 'Delete':
         case 'Backspace':
           if (tool === 'area' && area) {
             clearArea(area)
+          } else if (tool === 'pcg' && pcgDrawing) {
+            setPcgDrawing(pcgDrawing.length > 1 ? pcgDrawing.slice(0, -1) : null)
           } else if (tool === 'npcs') {
             removeFromSelected('npcs')
           } else if (tool === 'items') {
@@ -1363,6 +1908,8 @@ export function WorldEditor() {
           `${result.files.length} files. Restart the game servers for it to ` +
           'take effect in-game; the client picks up the new map on its next load.',
       })
+
+      await recordRuns()
     } catch (error) {
       const failure = error as { status?: number; sectors?: string[] }
 
@@ -1373,6 +1920,53 @@ export function WorldEditor() {
       })
     } finally {
       setBusy(null)
+    }
+  }
+
+  /**
+   * The PCG runs applied since the last save, put on record: each with what
+   * of it is still on the map, so one that was undone leaves nothing.
+   */
+  const recordRuns = async () => {
+    if (!pcgPending.length) {
+      return
+    }
+
+    const there = new Map<SectorKey, Set<string>>()
+    const stands = (object: PlacedObject) => {
+      const { key } = locate(object)
+
+      if (!there.has(key)) {
+        there.set(key, new Set((open.get(key)?.working.objects ?? []).map(signature)))
+      }
+
+      return there.get(key)!.has(signature(object))
+    }
+    const kept = pcgPending
+      .map((run) => ({ ...run, objects: run.objects.filter(stands) }))
+      .filter((run) => run.objects.length)
+
+    setPcgPending([])
+
+    if (!kept.length) {
+      return
+    }
+
+    try {
+      const { runs } = await fetchJson<{ runs: PcgRun[] }>('/api/landscape/pcg-runs', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ runs: kept }),
+      })
+
+      setPcgRuns(runs)
+    } catch (error) {
+      setNotice({
+        kind: 'error',
+        text: `The map was saved, but the PCG runs were not put on record: ${
+          error instanceof Error ? error.message : 'the request failed'
+        }`,
+      })
     }
   }
 
@@ -1510,9 +2104,34 @@ export function WorldEditor() {
 
   // the lighting tool: a drag draws the picked area's rectangle, or a new
   // area's if none is picked; a click picks the area there
-  const onMapArea = (next: TileArea) => (tool === 'lighting' ? setLightingDraft(next) : setArea(next))
+  const onMapArea = (next: TileArea) =>
+    tool === 'lighting' ? setLightingDraft(next) : tool === 'pcg' ? setPcgDraft(next) : setArea(next)
 
   const onMapRelease = () => {
+    // the PCG tool: a drag draws the area to generate over, and a click asks
+    // what happened on that tile
+    if (tool === 'pcg') {
+      const at = pcgDraft
+
+      setPcgDraft(null)
+
+      if (!at) {
+        return
+      }
+
+      if (at.width === 1 && at.height === 1) {
+        inspectPcg(at)
+      } else {
+        // the manual edits were of the old area's points
+        setPcgEdits([])
+        setPcgHeld(null)
+        setPcgDomain({ tool: 'VolumeTool', area: at })
+        setPcgUi((last) => ({ ...last, inspectTile: null, highlight: null }))
+      }
+
+      return
+    }
+
     const draft = lightingDraft
 
     setLightingDraft(null)
@@ -1559,6 +2178,151 @@ export function WorldEditor() {
       onGoTo={(at) => goTo(at)}
     />
   )
+
+  /** A past run: shown, cleaned up, brought back to be made again, or forgotten. */
+  const onPcgRun = async (run: PcgRun, what: 'show' | 'cleanup' | 'regenerate' | 'forget') => {
+    try {
+      if (what === 'forget') {
+        const { runs } = await fetchJson<{ runs: PcgRun[] }>(
+          `/api/landscape/pcg-runs?id=${encodeURIComponent(run.id)}`,
+          { method: 'DELETE' },
+        )
+
+        setPcgRuns(runs)
+        return
+      }
+
+      const around = areaOfDomain(run.domain)
+
+      if (around) {
+        goTo({
+          x: around.x + Math.floor(around.width / 2),
+          y: around.y + Math.floor(around.height / 2),
+        })
+      }
+
+      if (what === 'show') {
+        return
+      }
+
+      // only the objects still exactly as the run left them, as one undo step
+      const mine = new Set(run.objects.map(signature))
+      const keys = [...new Set(run.objects.map((object) => locate(object).key))].filter((key) =>
+        existing.has(key),
+      )
+
+      await ensure(keys)
+      edit(`pcg-cleanup:${run.id}:${Date.now()}`, (current) => {
+        const out = changes(current)
+
+        for (const key of keys) {
+          if (out.get(key)?.objects.some((object) => mine.has(signature(object)))) {
+            out.spawns(key, 'objects', (list) => list.filter((object) => !mine.has(signature(object))))
+          }
+        }
+
+        return out.out
+      })
+
+      if (what === 'regenerate') {
+        const setup = readSetup(run.setup)
+
+        setPcg(setup.graph)
+        setPcgEdits(setup.manualEdits)
+        setPcgBiomes(setup.biomes)
+        setPcgTool(run.domain.tool)
+        setPcgDrawing(null)
+        setPcgHeld(null)
+        setPcgDomain(run.domain)
+
+        if (run.domain.tool === 'SplineTool') {
+          setPcgWidth(run.domain.width)
+        }
+      }
+
+      setNotice({
+        kind: 'ok',
+        text:
+          what === 'regenerate'
+            ? `Took "${run.label}" off the map and brought its area and graph back: change what you like, then Apply.`
+            : `Took what is left of "${run.label}" off the map. Ctrl+Z puts it back; Save writes it.`,
+      })
+    } catch (error) {
+      setNotice({
+        kind: 'error',
+        text: error instanceof Error ? error.message : 'that run could not be reached',
+      })
+    }
+  }
+
+  const pcgPanel = (
+    <PcgPanel
+      graph={pcg}
+      onGraph={setPcg}
+      palette={palette}
+      thumbnail={pcgThumb}
+      tool={pcgTool}
+      onTool={(next) => {
+        setPcgTool(next)
+        setPcgDrawing(null)
+      }}
+      drawing={pcgDrawing}
+      onFinish={finishPcg}
+      width={pcgWidth}
+      onWidth={(width) => {
+        setPcgWidth(width)
+
+        if (pcgDomain?.tool === 'SplineTool') {
+          setPcgDomain({ ...pcgDomain, width })
+        }
+      }}
+      brush={settings.size}
+      onBrush={(size) => update({ size })}
+      biomes={pcgBiomes}
+      onBiomes={setPcgBiomes}
+      runs={pcgRuns}
+      pending={pcgPending.length}
+      onRun={onPcgRun}
+      domain={pcgDomain}
+      sectors={pcgKeys.length}
+      preview={pcgResult}
+      fresh={pcgFresh}
+      progress={pcgProgress}
+      ui={pcgUi}
+      onUi={(patch) => setPcgUi((last) => ({ ...last, ...patch }))}
+      edits={pcgEdits}
+      onEdits={setPcgEdits}
+      onGenerate={() => {
+        setPcgHeld(null)
+        setPcgMade(null)
+      }}
+      onCancel={() => {
+        if (pcgDomain) {
+          setPcgHeld({ graph: pcg, domain: pcgDomain, edits: pcgEdits, biomes: pcgBiomes })
+        }
+
+        setPcgProgress(null)
+      }}
+      onCleanup={cleanupPcg}
+      onApply={applyPcg}
+      onLoad={(graph, manualEdits, biomes) => {
+        setPcg(graph)
+        setPcgEdits(manualEdits)
+        setPcgBiomes(biomes)
+      }}
+      onError={(text) => setNotice({ kind: 'error', text })}
+    />
+  )
+
+  // the rectangle the tool in hand has out on the map
+  const mapArea =
+    tool === 'area'
+      ? area
+      : tool === 'lighting'
+        ? lightingDraft
+        : tool === 'pcg'
+          ? (pcgDraft ?? (pcgDomain?.tool === 'VolumeTool' ? pcgDomain.area : null))
+          : null
 
   const layerLabels: [keyof MapLayers, string][] = [
     ['heights', 'Heights'],
@@ -1715,8 +2479,10 @@ export function WorldEditor() {
                         ? 120
                         : undefined
                     }
-                    area={tool === 'area' ? area : tool === 'lighting' ? lightingDraft : null}
+                    area={mapArea}
                     regions={lightingRegions}
+                    pcgPreview={tool === 'pcg' ? pcgShown : undefined}
+                    pcgDomain={tool === 'pcg' ? pcgOutline : undefined}
                     stamp={stampArea}
                     boxes={npcsHere}
                     onVisible={onVisible}
@@ -1767,8 +2533,10 @@ export function WorldEditor() {
                     ? 120
                     : undefined
                 }
-                area={tool === 'area' ? area : tool === 'lighting' ? lightingDraft : null}
+                area={mapArea}
                 regions={lightingRegions}
+                pcgPreview={tool === 'pcg' ? pcgShown : undefined}
+                pcgDomain={tool === 'pcg' ? pcgOutline : undefined}
                 stamp={stampArea}
                 boxes={npcsHere}
                 onVisible={onVisible}
@@ -1835,8 +2603,10 @@ export function WorldEditor() {
                   ? 120
                   : undefined
               }
-              area={tool === 'area' ? area : tool === 'lighting' ? lightingDraft : null}
+              area={mapArea}
               regions={lightingRegions}
+              pcgPreview={tool === 'pcg' ? pcgShown : undefined}
+              pcgDomain={tool === 'pcg' ? pcgOutline : undefined}
               stamp={stampArea}
               boxes={npcsHere}
               onVisible={onVisible}
@@ -1962,6 +2732,7 @@ export function WorldEditor() {
           onTurnArea={doTurn}
           onClearArea={() => area && clearArea(area)}
           lightingPanel={lightingPanel}
+          pcgPanel={pcgPanel}
           selected={selected}
           selectedSectorExists={!!selectedSector}
           tileEditData={

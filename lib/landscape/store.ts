@@ -190,6 +190,32 @@ export function readPreviewArchive(name: string): Buffer | null {
   return fs.readFileSync(/*turbopackIgnore: true*/ path.join(/*turbopackIgnore: true*/ directory, name))
 }
 
+// the ground texture sizes the client keeps as files of their own (its
+// materials.js: the sizes past the one bundled with the renderer)
+const PREVIEW_GROUND_SIZES = [2048, 4096]
+
+/**
+ * One of the client's ground textures at a bigger size, for the 3D preview's
+ * Ground texture size setting. null when it isn't one, or the build has none.
+ */
+export function readPreviewGround(size: number, name: string): Buffer | null {
+  if (!PREVIEW_GROUND_SIZES.includes(size) || !/^[a-z]+$/.test(name)) {
+    return null
+  }
+
+  const file = path.join(
+    /*turbopackIgnore: true*/ clientDistDir(),
+    'data204',
+    'ground',
+    String(size),
+    `${name}.webp`,
+  )
+
+  return fs.existsSync(/*turbopackIgnore: true*/ file)
+    ? fs.readFileSync(/*turbopackIgnore: true*/ file)
+    : null
+}
+
 /**
  * The preview renderer, bundled from rsc-client (npm run build-preview
  * there). null when it has not been built.

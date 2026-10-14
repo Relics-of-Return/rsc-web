@@ -2,7 +2,8 @@ import type { MapLayers } from '@/components/world-map/WorldCanvas'
 
 /**
  * The editor's tools, after the in-house one's modes: each is on a number
- * key and an F key, and changes what a click on the map does.
+ * key and an F key, and changes what a click on the map does. The ten number
+ * keys are taken, so a tool after the tenth is on a letter.
  */
 
 export type Tool =
@@ -16,6 +17,7 @@ export type Tool =
   | 'items'
   | 'area'
   | 'lighting'
+  | 'pcg'
 
 export const TOOLS: { id: Tool; key: string; label: string; hint: string }[] = [
   { id: 'objects', key: '1', label: 'Objects', hint: 'Select tiles; put down scenery and doors' },
@@ -28,6 +30,7 @@ export const TOOLS: { id: Tool; key: string; label: string; hint: string }[] = [
   { id: 'items', key: '8', label: 'Items', hint: 'Put down items on the ground' },
   { id: 'area', key: '9', label: 'Area', hint: 'Select a rectangle to copy, paste, turn and clear' },
   { id: 'lighting', key: '0', label: 'Lighting', hint: "Draw the places that change HD graphics' light" },
+  { id: 'pcg', key: 'P', label: 'PCG', hint: 'Scatter trees, rocks and flowers across an area' },
 ]
 
 export type HeightAction = 'raise' | 'lower' | 'set' | 'smooth' | 'flatten'

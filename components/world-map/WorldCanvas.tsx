@@ -167,6 +167,27 @@ const CAMERA = '#ffffff'
 
 const DOOR_EDGES = ['north', 'east', 'backslash', 'slash'] as const
 
+/** The colour of a PCG layer's points, by the layer's place in its graph. */
+export function pcgLayerColour(index: number, alpha = 1): string {
+  return `hsla(${(index * 97 + 110) % 360}, 80%, 62%, ${alpha})`
+}
+
+/** The colour of a PCG cull reason: the same one for the same reason, always. */
+export function pcgReasonColour(reason: string, alpha = 1): string {
+  let hue = 7
+
+  for (const letter of reason) {
+    hue = (hue * 31 + letter.charCodeAt(0)) % 360
+  }
+
+  return `hsla(${hue}, 85%, 62%, ${alpha})`
+}
+
+/** The colour of a PCG point's density: dark at 0, light at 1. */
+export function pcgDensityColour(density: number, alpha = 1): string {
+  return `hsla(48, 95%, ${Math.round(12 + Math.max(0, Math.min(1, density)) * 70)}%, ${alpha})`
+}
+
 type Rgb = [number, number, number]
 
 interface Colours {
@@ -585,6 +606,38 @@ interface WorldCanvasProps {
   boxes?: { minX: number; maxX: number; minY: number; maxY: number }[]
   /** Named rectangles to shade and label: HD graphics' lighting areas. */
   regions?: { area: TileArea; label: string; selected: boolean }[]
+  /** PCG points to draw before anything is committed. */
+  pcgPreview?: {
+    /** The graph's layer ids in order: a layer's place is its colour. */
+    layers: string[]
+    points: {
+      x: number
+      y: number
+      /** The footprint, outlined when it is more than the one tile. */
+      bounds: TileArea
+      /** 0-1, for the gradient. */
+      density: number
+      layer: string
+      /** '' when standing. */
+      culled: string
+      /** Blocks walking: drawn stronger than a flower. */
+      blocked: boolean
+    }[]
+    colourBy: 'layer' | 'density' | 'culled'
+    /** Draw culled points too, as small hollow marks. */
+    showCulled: boolean
+    /** The point picked in the inspector, ringed. */
+    highlight?: { x: number; y: number } | null
+  }
+  /** The PCG tool's area when it is not a rectangle. */
+  pcgDomain?: {
+    /** The tiles it covers, shaded. */
+    tiles: { x: number; y: number }[]
+    /** The points it was drawn through, tile to tile. */
+    line: { x: number; y: number }[]
+    /** A polygon: the line runs back to where it began. */
+    closed: boolean
+  }
   /** The sectors in view changed: time to fetch any not open yet. */
   onVisible?: (keys: SectorKey[]) => void
   /** A click in select mode, or the start of a stroke in paint mode. */
@@ -854,6 +907,110 @@ export function WorldCanvas(props: WorldCanvasProps) {
         1.5,
         [6, 4],
       )
+    }
+
+    // the PCG tool's area, when it is a polygon, a path or painted tiles
+    const shape = current.pcgDomain
+
+    if (shape) {
+      context.fillStyle = 'rgba(77, 210, 255, 0.16)'
+
+      for (const tile of shape.tiles) {
+        const left = toX(tile.x + 1)
+        const top = toY(tile.y)
+
+        if (left > -zoom && top > -zoom && left < width && top < height) {
+          context.fillRect(left, top, zoom, zoom)
+        }
+      }
+
+      if (shape.line.length) {
+        context.strokeStyle = AREA
+        context.fillStyle = AREA
+        context.lineWidth = 1.5
+        context.setLineDash([5, 3])
+        context.beginPath()
+
+        shape.line.forEach((point, i) => {
+          // through the middle of each tile
+          context[i ? 'lineTo' : 'moveTo'](toX(point.x + 0.5), toY(point.y + 0.5))
+        })
+
+        if (shape.closed && shape.line.length > 2) {
+          context.closePath()
+        }
+
+        context.stroke()
+        context.setLineDash([])
+
+        for (const point of shape.line) {
+          context.beginPath()
+          context.arc(toX(point.x + 0.5), toY(point.y + 0.5), 3, 0, Math.PI * 2)
+          context.fill()
+        }
+      }
+    }
+
+    // the PCG tool's points: a standing one is a square on its tile, with the
+    // outline of a footprint bigger than that; a culled one a small hollow
+    // mark. coloured by layer, by density, or by what culled it
+    const pcg = current.pcgPreview
+
+    if (pcg) {
+      const inset = zoom >= 6 ? zoom * 0.2 : 0
+      const hollow = zoom * 0.35
+      // a footprint is a few tiles at most
+      const margin = zoom * 4
+      let colour = ''
+
+      context.lineWidth = 1
+
+      for (const point of pcg.points) {
+        if (point.culled && !pcg.showCulled) {
+          continue
+        }
+
+        const left = toX(point.x + 1)
+        const top = toY(point.y)
+
+        if (left < -margin || top < -margin || left > width + margin || top > height + margin) {
+          continue
+        }
+
+        const alpha = point.culled || point.blocked ? 0.95 : 0.6
+        const next =
+          pcg.colourBy === 'density'
+            ? pcgDensityColour(point.density, alpha)
+            : pcg.colourBy === 'culled'
+              ? point.culled
+                ? pcgReasonColour(point.culled, alpha)
+                : `rgba(255, 255, 255, ${alpha})`
+              : pcgLayerColour(pcg.layers.indexOf(point.layer), alpha)
+
+        // the points come a layer at a time, so this seldom changes
+        if (next !== colour) {
+          colour = next
+          context.fillStyle = colour
+          context.strokeStyle = colour
+        }
+
+        if (point.culled) {
+          context.strokeRect(left + hollow, top + hollow, zoom - hollow * 2, zoom - hollow * 2)
+          continue
+        }
+
+        context.fillRect(left + inset, top + inset, zoom - inset * 2, zoom - inset * 2)
+
+        if (point.bounds.width > 1 || point.bounds.height > 1) {
+          outline(point.bounds, colour, 1.5)
+          context.lineWidth = 1
+        }
+      }
+
+      if (pcg.highlight) {
+        outline({ ...pcg.highlight, width: 1, height: 1 }, '#ffffff', 3)
+        outline({ ...pcg.highlight, width: 1, height: 1 }, '#000000', 1)
+      }
     }
 
     if (current.area) {

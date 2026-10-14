@@ -53,8 +53,10 @@ export interface RenderSettings {
   fog: boolean
   sky: 'day' | 'dusk' | 'night' | 'classic'
   brightness: number
-  /** Old school's ground textures on grass and dirt, and moving water. */
+  /** The ground's textures on grass, dirt, sand and roads, and moving water. */
   ground: boolean
+  /** Those textures' size, as the game's Ground texture size: one of GROUND_SIZES. */
+  groundSize: number
   /** HD graphics' Enhanced lighting: the sky setting's sun, lighting the world again. */
   lighting: boolean
   /** The sun's shadows with Enhanced lighting: 0 off, 1 low to 3 high. */
@@ -84,6 +86,7 @@ export const DEFAULT_RENDER_SETTINGS: RenderSettings = {
   sky: 'day',
   brightness: 1,
   ground: true,
+  groundSize: 1024,
   lighting: false,
   shadows: 2,
   place: true,
@@ -97,6 +100,9 @@ export const DEFAULT_RENDER_SETTINGS: RenderSettings = {
 
 export const DRAW_DISTANCE_MIN = 24
 export const DRAW_DISTANCE_MAX = 256
+
+/** The client's ground texture sizes (rsc-client's src/gpu/materials.js). */
+export const GROUND_SIZES = [512, 1024, 2048, 4096]
 
 const RENDER_STORAGE_KEY = 'world-editor:render'
 
@@ -189,7 +195,11 @@ interface PreviewInstance {
 
 type PreviewConstructor = new (
   canvas: HTMLCanvasElement,
-  options?: { members?: boolean; overlay?: HTMLCanvasElement | null },
+  options?: {
+    members?: boolean
+    overlay?: HTMLCanvasElement | null
+    groundFile?: (name: string, size: number) => string
+  },
 ) => PreviewInstance
 
 declare global {
@@ -239,6 +249,11 @@ async function fetchArchive(name: string): Promise<ArrayBuffer> {
   }
 
   return response.arrayBuffer()
+}
+
+// where the ground textures past the size the bundle carries are served
+function groundFile(name: string, size: number): string {
+  return `/api/landscape/ground?size=${size}&name=${encodeURIComponent(name)}`
 }
 
 // mudclient looks down at 912; the editor lets you tip from nearly
@@ -688,7 +703,10 @@ export function WorldPreview3D({
           return
         }
 
-        const preview = new Preview(canvasRef.current, { overlay: overlayRef.current })
+        const preview = new Preview(canvasRef.current, {
+          overlay: overlayRef.current,
+          groundFile,
+        })
 
         await preview.load(fetchArchive)
 
@@ -761,6 +779,7 @@ export function WorldPreview3D({
     sky,
     brightness,
     ground,
+    groundSize,
     lighting,
     shadows,
     place,
@@ -785,6 +804,7 @@ export function WorldPreview3D({
       sky,
       brightness,
       ground,
+      groundSize,
       lighting,
       shadows,
       place,
@@ -805,6 +825,7 @@ export function WorldPreview3D({
     sky,
     brightness,
     ground,
+    groundSize,
     lighting,
     shadows,
     place,
