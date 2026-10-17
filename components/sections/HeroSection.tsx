@@ -39,6 +39,7 @@ export function HeroSection() {
         <h1 className="fx-fade-in-up mb-6 w-full" style={delay(100)}>
           <SiteLogo
             variant="hero"
+            classic
             priority
             className="mx-auto drop-shadow-[0_8px_28px_rgba(0,0,0,0.95)]"
           />
