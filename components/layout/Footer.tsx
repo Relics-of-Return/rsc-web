@@ -21,7 +21,8 @@ export function Footer() {
             <Link href="/" className="group inline-flex items-center gap-3">
               <SiteLogo
                 variant="nav"
-                className="h-9 w-[86px] transition-transform duration-300 group-hover:scale-105"
+                classic
+                className="h-9 transition-transform duration-300 group-hover:scale-105"
               />
               <span className="font-adventure text-lg font-bold uppercase tracking-wider text-[#f2ca50] transition-colors group-hover:text-[#ffe088]">
                 {SITE_NAME}

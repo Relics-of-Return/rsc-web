@@ -37,7 +37,7 @@ export function MainNav() {
             href="/"
             className="flex items-center rounded-md transition-[filter] hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/50"
           >
-            <SiteLogo variant="nav" priority />
+            <SiteLogo variant="nav" classic priority />
             <span className="sr-only">{SITE_NAME}</span>
           </Link>
 

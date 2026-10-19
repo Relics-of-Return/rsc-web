@@ -33,7 +33,7 @@ export function SiteLogo({ variant, classic, className, priority }: SiteLogoProp
 
   if (variant === 'nav') {
     return (
-      <span className={cn('relative block shrink-0 h-14 w-[134px]', className)}>
+      <span className={cn('relative block shrink-0 h-14', art.aspect, className)}>
         <Image
           src={art.x2}
           alt=""
