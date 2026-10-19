@@ -11,8 +11,10 @@ const RES_PATH = '/res/avatar'
 const AVATAR_WIDTH = 86
 const AVATAR_HEIGHT = 115
 
-// the sprite values the game stores are 1-based, with 0 meaning "nothing
-// in this slot"
+/**
+ * the sprite values the game stores are 1-based, with 0 meaning "nothing
+ * in this slot"
+ */
 const DEFAULTS = {
   angle: 1,
   headSprite: 1,
@@ -25,10 +27,10 @@ const DEFAULTS = {
   scale: 1,
 }
 
-// the legs every character is drawn with, under whatever they wear
+/** the legs every character is drawn with, under whatever they wear */
 const LEGS_ANIMATION = 3
 
-// character colours the client defines as 32-bit rgb integers
+/** character colours the client defines as 32-bit rgb integers */
 const SKIN_COLOURS = [0xecded0, 0xccb366, 0xb38c40, 0x997326, 0x906020]
 
 const HAIR_COLOURS = [
@@ -42,9 +44,11 @@ const TOP_COLOURS = [
   0xffffff,
 ]
 
-// which part of the character each wieldable `position` draws. gloves
-// (position 10) are left out because the game never draws them on the
-// character
+/**
+ * which part of the character each wieldable `position` draws. gloves
+ * (position 10) are left out because the game never draws them on the
+ * character
+ */
 const SLOT_NAMES: Record<number, string> = {
   0: 'head',
   1: 'body',
@@ -59,8 +63,10 @@ const SLOT_NAMES: Record<number, string> = {
   11: 'cape',
 }
 
-// the order the parts stack in, which depends on which way the character
-// is facing
+/**
+ * the order the parts stack in, which depends on which way the character
+ * is facing
+ */
 const SPRITE_ORDER = {
   FRONT: [
     'cape', 'legs', 'skirt', 'body', 'neck', 'head', 'med', 'chain',
@@ -76,23 +82,29 @@ const SPRITE_ORDER = {
   ],
 }
 
-// overlay values at or below this are the markers the client uses for the
-// parts it recolours itself (hair, top, legs), not real colours
+/**
+ * overlay values at or below this are the markers the client uses for the
+ * parts it recolours itself (hair, top, legs), not real colours
+ */
 const MAX_OVERLAY_MARKER = 5
 
-// the female platebody sprite, which needs the skin showing through
+/** the female platebody sprite, which needs the skin showing through */
 const FEMALE_PLATEBODY_SPRITE = 486
 
-// angles 0-7 face the camera, 8-14 face away, and 15+ are the combat
-// stances, which stack the weapon differently
+/**
+ * angles 0-7 face the camera, 8-14 face away, and 15+ are the combat
+ * stances, which stack the weapon differently
+ */
 const BACK_ANGLE = 8
 const COMBAT_ANGLE = 15
 
 interface Animation {
   sprite: number
   overlay: number
-  // set on equipment that shows skin, as the Ironman platebody's bare arms
-  // do (rsc-client/scripts/export-avatar-sprites.js)
+  /**
+   * set on equipment that shows skin, as the Ironman platebody's bare arms
+   * do (rsc-client/scripts/export-avatar-sprites.js)
+   */
   skin?: boolean
 }
 
@@ -182,8 +194,10 @@ async function loadDefinitions(): Promise<Definitions> {
   return definitions
 }
 
-// resolves to null rather than throwing for the sprite ids that have no
-// image: a missing part shouldn't cost us the whole avatar
+/**
+ * resolves to null rather than throwing for the sprite ids that have no
+ * image: a missing part shouldn't cost us the whole avatar
+ */
 function fetchSprite(id: number): Promise<HTMLImageElement | null> {
   const cached = spriteCache.get(id)
 
@@ -212,8 +226,10 @@ function splitColour(colour: number): RGB {
   }
 }
 
-// the client stores each recolourable part in greyscale, with the skin in
-// pure red, and multiplies those pixels by the colour the player picked
+/**
+ * the client stores each recolourable part in greyscale, with the skin in
+ * pure red, and multiplies those pixels by the colour the player picked
+ */
 function colourizeSprite(
   sprite: CanvasImageSource,
   width: number,
@@ -258,8 +274,10 @@ function colourizeSprite(
   return canvas
 }
 
-// the animation slots to draw, keyed by part name, taken from the
-// character's own sprites and everything they have equipped over them
+/**
+ * the animation slots to draw, keyed by part name, taken from the
+ * character's own sprites and everything they have equipped over them
+ */
 function getSlots(
   player: Character,
   wieldable: Record<string, Wieldable>,
@@ -342,11 +360,13 @@ async function drawSlot(
   return { image, shift: shifts[spriteID] || { x: 0, y: 0 } }
 }
 
-// the parts are drawn where the game puts them, in a frame that leaves room on
-// one side for a weapon the player may not be holding, so the figure ends up
-// off-centre in the canvas. the website only ever shows the figure on its own,
-// so the finished canvas is trimmed to the pixels actually drawn and centred,
-// which is what puts the character in the middle of its box
+/**
+ * the parts are drawn where the game puts them, in a frame that leaves room on
+ * one side for a weapon the player may not be holding, so the figure ends up
+ * off-centre in the canvas. the website only ever shows the figure on its own,
+ * so the finished canvas is trimmed to the pixels actually drawn and centred,
+ * which is what puts the character in the middle of its box
+ */
 function centreContent(composite: HTMLCanvasElement): HTMLCanvasElement {
   const context = composite.getContext('2d')!
 
@@ -397,7 +417,7 @@ function centreContent(composite: HTMLCanvasElement): HTMLCanvasElement {
   return centred
 }
 
-// draws a player avatar and resolves to a canvas of it
+/** draws a player avatar and resolves to a canvas of it */
 async function player(options: PlayerOptions): Promise<HTMLCanvasElement> {
   const loaded = await loadDefinitions()
 

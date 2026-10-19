@@ -11,7 +11,7 @@ export function getWwwApiUrl(): string {
 /**
  * Headers that tell rsc-www who the visitor is, for its per-IP registration
  * limit and login lockout. In production every request reaches rsc-www from
- * this server (Vercel) through the Cloudflare tunnel, so the address rsc-www
+ * this server (Vercel), so the address rsc-www
  * sees itself is the same for every visitor. It believes the forwarded one
  * only with the shared secret beside it (`proxySecret` in rsc-www's config,
  * `RSC_WWW_PROXY_SECRET` here); without the secret nothing is sent.

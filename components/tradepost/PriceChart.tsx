@@ -17,9 +17,11 @@ interface PriceChartProps {
   now: number
 }
 
-// the one series colour (the categorical amber, stepped for the dark surface
-// and checked against it); the volume columns are context, so they take the
-// muted text tone. grid one step off the surface
+/**
+ * the one series colour (the categorical amber, stepped for the dark surface
+ * and checked against it); the volume columns are context, so they take the
+ * muted text tone. grid one step off the surface
+ */
 const PRICE_COLOUR = '#c98500'
 const VOLUME_COLOUR = '#6e6459'
 const GRID_COLOUR = '#2a231a'
@@ -42,7 +44,7 @@ const EMPTY_MESSAGES: Record<TradepostRange, string> = {
   all: 'No trades yet.',
 }
 
-// round numbers for the price axis: 1, 2 or 5 times a power of ten
+/** round numbers for the price axis: 1, 2 or 5 times a power of ten */
 function niceStep(span: number, count: number): number {
   const raw = span / Math.max(1, count)
   const power = 10 ** Math.floor(Math.log10(raw))
@@ -101,7 +103,7 @@ function formatTick(range: TradepostRange, time: number): string {
     : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-// what a bucket covers, for the tooltip and the table
+/** what a bucket covers, for the tooltip and the table */
 function formatBucket(time: number, bucket: number): string {
   const start = new Date(time * 1000)
 
@@ -123,7 +125,7 @@ function formatBucket(time: number, bucket: number): string {
   return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
 }
 
-// a column with its data end rounded and its foot square on the baseline
+/** a column with its data end rounded and its foot square on the baseline */
 function columnPath(x: number, width: number, top: number, base: number): string {
   const radius = Math.min(4, width / 2, base - top)
 
@@ -295,7 +297,6 @@ export function PriceChart({ history, now }: PriceChartProps) {
           </p>
         ) : chart ? (
           <svg width={width ?? 0} height={TOTAL_HEIGHT} className="mt-2 block overflow-visible text-text-muted">
-            {/* price grid and axis */}
             {chart.prices.ticks.map((tick) => (
               <g key={tick}>
                 <line
@@ -339,7 +340,6 @@ export function PriceChart({ history, now }: PriceChartProps) {
               strokeWidth={2}
             />
 
-            {/* volume */}
             <text x={MARGIN.left - 8} y={chart.volumeTop} textAnchor="end" dominantBaseline="hanging" fill="currentColor" className="text-[11px] tabular-nums">
               {formatCompact(chart.maxVolume)}
             </text>
@@ -371,7 +371,6 @@ export function PriceChart({ history, now }: PriceChartProps) {
               Items traded
             </text>
 
-            {/* time axis */}
             {chart.ticks.map((tick) => (
               <text
                 key={tick}
@@ -385,7 +384,6 @@ export function PriceChart({ history, now }: PriceChartProps) {
               </text>
             ))}
 
-            {/* crosshair */}
             {activePoint && (
               <g pointerEvents="none">
                 <line

@@ -1,7 +1,7 @@
 import type { RoadmapArea, RoadmapItem, RoadmapStage } from '@/lib/roadmap-types'
 
 /**
- * Roadmap for Relics of Return, as of October 14, 2026.
+ * Roadmap for Relics of Return.
  *
  * `stage` follows the release pipeline: `dev` is on World 4 (private),
  * `beta` is on World 3, `live` is on Worlds 1 and 2. When `npm run push-beta`
@@ -51,7 +51,6 @@ export const areaLabels: Record<RoadmapArea, string> = {
 }
 
 export const roadmapItems: RoadmapItem[] = [
-  // ── In development (World 4) ────────────────────────────────────────────
   {
     id: 'construction',
     title: 'Construction',
@@ -161,7 +160,6 @@ export const roadmapItems: RoadmapItem[] = [
     summary: 'Quality-of-life map upgrades: smooth panning, dungeon layers, quest icons, and key landmarks.',
   },
 
-  // ── In beta (World 3) ───────────────────────────────────────────────────
   {
     id: 'hd-graphics',
     title: 'HD graphics',
@@ -269,7 +267,6 @@ export const roadmapItems: RoadmapItem[] = [
     summary: 'NPCs can converse with several players simultaneously and no longer trap players in tight corridors.',
   },
 
-  // ── Planned ─────────────────────────────────────────────────────────────
   {
     id: 'cape-emotes',
     title: 'Skill cape emotes',
@@ -429,7 +426,6 @@ export const roadmapItems: RoadmapItem[] = [
   },
 
 
-  // ── Live (Worlds 1 & 2) ─────────────────────────────────────────────────
   {
     id: 'tradepost',
     title: 'Grand Exchange (Tradepost)',

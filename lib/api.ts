@@ -66,7 +66,7 @@ export async function getPlayerPositions(world?: number): Promise<PlayersData> {
   return getJSON<PlayersData>(`/api/players${query}`)
 }
 
-/** Resolves the current session: { username: string | null }. */
+/** Resolves the current session: the username (null when logged out) and staff rank. */
 export async function getSession(): Promise<SessionData> {
   return getJSON<SessionData>('/api/session')
 }
@@ -97,7 +97,10 @@ export async function logoutAccount(): Promise<LogoutResult> {
   return postJSON<LogoutResult>('/api/logout', {})
 }
 
-// Error carrying the HTTP status, so the admin section can tell "log in" (401) apart from "you are not staff" (403).
+/**
+ * Error carrying the HTTP status, so the admin section can tell "log in" (401)
+ * apart from "you are not staff" (403).
+ */
 export class ApiError extends Error {
   status: number
 
@@ -140,7 +143,7 @@ export async function getAbuseReports(
   return adminJSON<AbuseReportsData>(`/api/admin/reports?${params}`)
 }
 
-// Marks an abuse report as dealt with, or reopens it.
+/** Marks an abuse report as dealt with, or reopens it. */
 export async function resolveAbuseReport(
   id: number,
   handled = true,
@@ -151,12 +154,16 @@ export async function resolveAbuseReport(
   })
 }
 
-// The full case file for one report: snapshot, account facts and history.
+/** The full case file for one report: snapshot, account facts and history. */
 export async function getAbuseReportDetail(id: number): Promise<AbuseReportDetail> {
   return adminJSON<AbuseReportDetail>(`/api/admin/reports/detail?id=${id}`)
 }
 
-// Changes the site's settings given, leaving the rest, and resolves to all of them. Administrators only: rsc-www answers 401 when nobody is logged in and 403 for anyone below an administrator.
+/**
+ * Changes the site's settings given, leaving the rest, and resolves to all of
+ * them. Administrators only: rsc-www answers 401 when nobody is logged in and
+ * 403 for anyone below an administrator.
+ */
 export async function saveSiteSettings(changes: Partial<SiteSettings>): Promise<SiteSettings> {
   return adminJSON<SiteSettings>('/api/admin/settings', changes)
 }
@@ -295,28 +302,28 @@ export async function uploadGuideImage(file: File): Promise<{ success: boolean; 
   })
 }
 
-// URL of the screenshot the reporter's client uploaded (staff session needed).
+/** URL of the screenshot the reporter's client uploaded (staff session needed). */
 export function abuseReportScreenshotUrl(id: number): string {
   return `/api/admin/reports/screenshot?id=${id}`
 }
 
-// Filters for the staff command log. Every one is optional.
+/** Filters for the staff command log. Every one is optional. */
 export interface StaffLogFilters {
-  // A player name: matches commands they used *and* commands used on them.
+  /** A player name: matches commands they used *and* commands used on them. */
   player?: string
-  // Exact staff member who used a command.
+  /** Exact staff member who used a command. */
   staff?: string
-  // Exact player a command was used on.
+  /** Exact player a command was used on. */
   target?: string
-  // Command id (see {@link StaffLogsData.commands}), e.g. 'mute'.
+  /** Command id (see {@link StaffLogsData.commands}), e.g. 'mute'. */
   command?: string
-  // Where a command was used; omit for both.
+  /** Where a command was used; omit for both. */
   source?: 'game' | 'website'
-  // World id; omit or -1 for every world.
+  /** World id; omit or -1 for every world. */
   world?: number
-  // Unix timestamp (seconds), inclusive lower bound.
+  /** Unix timestamp (seconds), inclusive lower bound. */
   from?: number
-  // Unix timestamp (seconds), inclusive upper bound.
+  /** Unix timestamp (seconds), inclusive upper bound. */
   to?: number
   page?: number
 }

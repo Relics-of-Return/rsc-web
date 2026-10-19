@@ -31,10 +31,10 @@ interface MarketTableProps {
 
 type SortKey = 'name' | 'sell' | 'buy' | 'last' | 'day' | 'month' | 'volume'
 
-// how many quiet items a search lists after the ones on the market
+/** how many quiet items a search lists after the ones on the market */
 const SEARCH_LIMIT = 40
 
-// a missing value sorts last whichever way the column is turned
+/** a missing value sorts last whichever way the column is turned */
 function compare(a: number | string | null, b: number | string | null, ascending: boolean) {
   if (a === null && b === null) return 0
   if (a === null) return 1

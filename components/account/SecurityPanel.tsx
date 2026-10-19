@@ -9,8 +9,10 @@ import type { AccountWorld, PasswordChangeResult } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { Panel, longDate, relativeTime } from './parts'
 
-// what the game client can send: letters, digits and _ (anything else becomes
-// _), 20 characters at most. rsc-www and the data server check the same
+/**
+ * what the game client can send: letters, digits and _ (anything else becomes
+ * _), 20 characters at most. rsc-www and the data server check the same
+ */
 const GAME_CHARACTERS = /^[A-Za-z0-9_]*$/
 
 const ERRORS: Record<string, string> = {

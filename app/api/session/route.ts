@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { getWwwApiUrl } from '@/lib/www'
 
 // BFF: proxy rsc-www's GET /api/session. The browser's session cookie is
-// forwarded so rsc-www can resolve it. Response: { username: string | null }.
+// forwarded so rsc-www can resolve it. Response: { username, rank }.
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {

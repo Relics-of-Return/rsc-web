@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 
 const FOLDER = path.join(process.cwd(), 'downloads', 'launcher')
 
-// latest.json, x.y.z installers, their .sig files - nothing with a path in it
+/** latest.json, x.y.z installers, their .sig files - nothing with a path in it */
 const SAFE_NAME = /^[A-Za-z0-9._-]+$/
 
 const TYPES: Record<string, string> = {

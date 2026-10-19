@@ -57,7 +57,6 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
     return qs ? `/hiscores?${qs}` : '/hiscores'
   }
 
-  // ---- Player lookup view -------------------------------------------------
   if (username) {
     let ranks: PlayerRanksData['ranks'] = null
     let staffRank = 0
@@ -131,13 +130,11 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
           </p>
         ) : (
           <div className="mt-8 flex flex-col lg:flex-row gap-8 lg:gap-12">
-            {/* Avatar, and the diaries under it */}
             <div className="flex-shrink-0 space-y-6 lg:w-72">
               <PlayerAvatar appearance={appearance} />
               <DiaryCard diaries={diaries} accountMode={accountMode} />
             </div>
 
-            {/* Ranks Table */}
             <div className="flex-1 min-w-0 overflow-x-auto rounded-lg border border-stone-700">
               <table className="w-full text-sm">
                 <thead>
@@ -183,7 +180,6 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
     )
   }
 
-  // ---- Skill ranking view -------------------------------------------------
   let data: HiscoresData | null = null
   let loadError = false
 
@@ -210,7 +206,6 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
         }
       />
 
-      {/* Everyone, or Ironman */}
       <div className="mt-8 flex justify-center gap-2">
         {MODES.map((m) => (
           <Link
@@ -229,7 +224,6 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
         ))}
       </div>
 
-      {/* Skill tabs */}
       <div className="mt-10 flex flex-wrap justify-center gap-2">
         {skills.map((s) => (
                     <Link

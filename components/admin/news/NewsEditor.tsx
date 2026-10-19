@@ -43,8 +43,10 @@ function todaySeconds(): number {
   return dateSeconds(dateInput(Date.now() / 1000))
 }
 
-// the local day, as dateSeconds stores it: toISOString's UTC day is a day
-// out east or west of Greenwich
+/**
+ * the local day, as dateSeconds stores it: toISOString's UTC day is a day
+ * out east or west of Greenwich
+ */
 function dateInput(date: number): string {
   const day = new Date(date * 1000)
   const pad = (value: number) => String(value).padStart(2, '0')
@@ -85,12 +87,12 @@ function AddBlockMenu({ onPick, onClose }: { onPick: (type: NewsBlockType) => vo
   )
 }
 
-// enter in a one-line field would publish the article
+/** enter in a one-line field would publish the article */
 function keepEnterInField(event: KeyboardEvent<HTMLFormElement>) {
   if (event.key === 'Enter' && event.target instanceof HTMLInputElement) event.preventDefault()
 }
 
-// links in the preview would leave the editor
+/** links in the preview would leave the editor */
 function stayInEditor(event: MouseEvent) {
   if ((event.target as HTMLElement).closest('a')) event.preventDefault()
 }

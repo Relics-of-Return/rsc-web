@@ -23,12 +23,16 @@ export const metadata = {
     'Download the Relics of Return launcher for Windows. It keeps the game up to date by itself.',
 }
 
-// asked again at most every five minutes, so a new launcher shows up here
-// without a redeploy
+/**
+ * asked again at most every five minutes, so a new launcher shows up here
+ * without a redeploy
+ */
 export const revalidate = 300
 
-// the launcher's own update manifest (rsc-tauri-client/scripts/publish-launcher.cjs),
-// which rsc-www serves from its public/downloads/launcher/ at api.*
+/**
+ * the launcher's own update manifest (rsc-tauri-client/scripts/publish-launcher.cjs),
+ * which rsc-www serves from its public/downloads/launcher/ at api.*
+ */
 type LatestLauncher = {
   version: string
   platforms?: Record<string, { url: string }>
@@ -53,12 +57,12 @@ async function windowsInstaller() {
         size = `${(bytes / 1048576).toFixed(1)} MB`
       }
     } catch {
-      // the size is only shown
+      // the size is optional: keep the placeholder
     }
 
     return { version: latest.version, url, size }
   } catch {
-    // the API (this PC, through the tunnel) is down: the card says SOON
+    // rsc-www is unreachable: the card says SOON
     return null
   }
 }
@@ -146,7 +150,6 @@ export default async function DownloadSection() {
   return (
     <div className={cn(landingFontVariables, 'bg-[#17130d] font-sans-body text-[#ece1d6] min-h-screen py-16 lg:py-20 flex items-center justify-center')}>
       <section className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-        {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-12">
           <h1 className="font-adventure text-2xl sm:text-3xl font-bold text-[#f5ebd9] uppercase tracking-wide mb-3">
             Select Your Operating System
@@ -156,7 +159,6 @@ export default async function DownloadSection() {
           </p>
         </div>
 
-        {/* 4-Card OS Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {links.map((item) => {
             const Icon = item.icon
@@ -171,24 +173,20 @@ export default async function DownloadSection() {
                   !item.released && 'select-none'
                 )}
               >
-                {/* Diagonal Top-Right "SOON" Ribbon */}
                 {!item.released && (
                   <div className="absolute top-3 -right-8 z-20 w-32 rotate-45 border-y border-[#f2ca50]/40 bg-[#16110a]/95 py-0.5 text-center font-adventure text-[10px] font-bold uppercase tracking-widest text-[#f2ca50] shadow-lg backdrop-blur-sm pointer-events-none">
                     SOON
                   </div>
                 )}
 
-                {/* Top-Right Badge: BEST CHOICE */}
                 {item.recommended && item.released && (
                   <div className="absolute top-0 right-0 bg-gradient-to-l from-[#d4af37] to-[#a88219] text-[#3c2f00] px-3 py-0.5 text-[10px] font-bold font-adventure tracking-wider uppercase rounded-bl-sm shadow-md">
                     BEST CHOICE
                   </div>
                 )}
 
-                {/* Card Content Container */}
                 <div className={cn('flex flex-col justify-between h-full transition-all', !item.released && 'filter blur-[2.5px] opacity-35')}>
                   <div>
-                    {/* Icon & Badge Header */}
                     <div className="flex items-center justify-between mb-4">
                       <div className="border border-[#3c3021] bg-[#241c13] text-[#f2ca50] w-12 h-12 flex items-center justify-center rounded-sm shadow-inner">
                         <Icon className="w-6 h-6" />
@@ -198,13 +196,11 @@ export default async function DownloadSection() {
                       </span>
                     </div>
 
-                    {/* Title & OS Subtitle */}
                     <h3 className="font-adventure text-xl font-bold text-[#f5ebd9] mb-1">
                       {item.title}
                     </h3>
                     <p className="text-xs text-[#a69986] mb-5">{item.os}</p>
 
-                    {/* Details Box */}
                     <div className="border border-[#2a2015] bg-[#120e0a] p-3 text-xs font-mono text-[#d0c5af] space-y-2 rounded-sm mb-6">
                       <div className="flex items-center justify-between">
                         <span className="text-[#8e8270]">Format:</span>
@@ -217,7 +213,6 @@ export default async function DownloadSection() {
                     </div>
                   </div>
 
-                  {/* Actions */}
                   <div className="space-y-3">
                     {item.released ? (
                       <a
@@ -259,7 +254,6 @@ export default async function DownloadSection() {
           })}
         </div>
 
-        {/* Browser Play Banner */}
         <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-6 rounded-sm border border-[#3c3021] bg-gradient-to-r from-[#1c160f] via-[#241c13] to-[#1c160f] p-6 shadow-2xl">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-sm border border-[#d4af37]/40 bg-[#120e0a] text-[#f2ca50] flex items-center justify-center shrink-0 shadow-inner">
@@ -283,7 +277,6 @@ export default async function DownloadSection() {
           </Link>
         </div>
 
-        {/* Installation & Troubleshooting FAQ */}
         <div className="mt-16 max-w-3xl mx-auto">
           <div className="mb-6 text-center">
             <h2 className="font-adventure text-2xl font-bold text-[#ece1d6]">

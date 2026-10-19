@@ -36,7 +36,6 @@ export async function POST(request: NextRequest) {
 
     const next = NextResponse.json(data)
 
-    // Forward any Set-Cookie headers from rsc-www to the browser.
     for (const cookie of res.headers.getSetCookie()) {
       next.headers.append('set-cookie', cookie)
     }

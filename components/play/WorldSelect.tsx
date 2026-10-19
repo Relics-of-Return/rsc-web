@@ -50,8 +50,10 @@ function playersText(world: WorldEntry): string {
   return `${formatNumber(players)} ${players === 1 ? 'player' : 'players'}`
 }
 
-// the world's own game page; /play?world=N redirects there too, for a world
-// list that hasn't loaded its URL
+/**
+ * the world's own game page; /play?world=N redirects there too, for a world
+ * list that hasn't loaded its URL
+ */
 function playHref(world: WorldEntry): string {
   return gameURL(world) ?? `/play?world=${world.id}`
 }

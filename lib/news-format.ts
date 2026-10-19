@@ -59,7 +59,7 @@ export interface NewsDocument {
   blocks: NewsBlock[]
 }
 
-// static class names, so tailwind generates every one of them
+/** static class names, so tailwind generates every one of them */
 export const NEWS_COLOURS = {
   gold: { label: 'Gold', swatch: '#f0c674', text: 'text-gold-400', bg: 'bg-gold-500/25' },
   yellow: { label: 'Yellow', swatch: '#fde047', text: 'text-yellow-300', bg: 'bg-yellow-400/25' },
@@ -122,8 +122,6 @@ export function emptyColumn(): NewsColumn {
 export function singleLine(value: string): string {
   return value.replace(/\s+/g, ' ').trim()
 }
-
-// --- storage ---------------------------------------------------------------
 
 export function isRichNews(body: string): boolean {
   return body.includes(NEWS_MARKER)
@@ -235,7 +233,7 @@ export function normalizeBlock(value: unknown): NewsBlock | null {
   }
 }
 
-// --- inline markup ---------------------------------------------------------
+// inline markup:
 // [b] [i] [u] [s] [code] [color=gold|#rrggbb] [bg=…] [size=small|large|huge]
 // [url=https://…] [wiki=Page] [item=id]Name[/item]. tags nest; a stray
 // closing tag stays as text, and an unclosed one runs to the end
@@ -312,8 +310,6 @@ export function colourHex(value: string): string | null {
   return /^#[0-9a-f]{6}$/.test(key) ? key : null
 }
 
-// --- links -----------------------------------------------------------------
-
 export function safeHref(value: string): string | null {
   const url = value.trim()
   if (/^https?:\/\/[^\s"'<>]+$/i.test(url)) return url
@@ -321,7 +317,7 @@ export function safeHref(value: string): string | null {
   return null
 }
 
-// uploads and the site's own pictures only
+/** uploads and the site's own pictures only */
 export function safeImageSrc(value: string): string | null {
   const src = value.trim()
   return /^\/(?![/\\])[^\s"'<>]*$/.test(src) ? src : null
@@ -341,8 +337,6 @@ export function wikiHref(page: string): string {
 export function itemId(value: string): number | null {
   return /^\d{1,5}$/.test(value.trim()) ? Number(value.trim()) : null
 }
-
-// --- the older markdown articles --------------------------------------------
 
 const MD_INLINE = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)\s]+\))/g
 const MD_IMAGE = /!\[([^\]]*)\]\(([^)\s]+)\)/g
@@ -367,7 +361,7 @@ function markdownSummary(body: string): string {
   return singleLine(plainText(markdownInline(line))).slice(0, SUMMARY_LIMIT)
 }
 
-// GitHub's alert names, plus the editor's own
+/** GitHub's alert names, plus the editor's own */
 const MD_CALLOUTS: Record<string, CalloutTone> = {
   NOTE: 'note',
   INFO: 'info',

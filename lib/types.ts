@@ -65,8 +65,10 @@ export interface HiscoresData {
   pages?: number
 }
 
-// A player's achievement diaries as the lookup shows them: per area, how many
-// tiers are complete and how many claimed, and the Ironman helm's temper.
+/**
+ * A player's achievement diaries as the lookup shows them: per area, how many
+ * tiers are complete and how many claimed, and the Ironman helm's temper.
+ */
 export interface DiarySummary {
   temper: number
   complete: Record<string, number>
@@ -88,7 +90,6 @@ export interface PlayerRanksData {
   staffRank?: number
   /** Account type: 0 standard, 1 Ironman. */
   accountMode?: number
-  /** Quest points. */
   questPoints?: number
   /** How far the player's achievement diaries have got. */
   diaries?: DiarySummary | null
@@ -449,7 +450,6 @@ export interface AbuseReportDetail {
   }
 }
 
-// ---- Tradepost -------------------------------------------------------------
 // rsc-www's /api/tradepost and /api/tradepost/item (see rsc-data-server's
 // src/tradepost-market.js). dates are unix seconds
 
@@ -498,7 +498,6 @@ export interface TradepostMarketItem {
   month: TradepostStats | null
 }
 
-// rsc-data-server's /api/tradepost-market
 export interface TradepostTotals {
   openOffers: number
   listedItems: number
@@ -516,7 +515,6 @@ export interface TradepostMarketData {
   items: TradepostMarketItem[]
 }
 
-// rsc-data-server's /api/tradepost-market
 export interface TradepostHistoryPoint {
   time: number
   volume: number
@@ -525,14 +523,12 @@ export interface TradepostHistoryPoint {
   high: number
 }
 
-// rsc-data-server's /api/tradepost-market
 export interface TradepostHistory {
   bucket: number
   since: number
   points: TradepostHistoryPoint[]
 }
 
-// rsc-data-server's /api/tradepost-market/item
 export type TradepostRange = 'day' | 'month' | 'all'
 
 export interface TradepostItemDetail {
@@ -551,13 +547,12 @@ export interface TradepostItemDetail {
   history: Record<TradepostRange, TradepostHistory>
 }
 
-// rsc-data-server's /api/tradepost-market/item
 export interface TradepostItemData {
   world: number
   item: TradepostItemDetail
 }
 
-// invite-only beta (rsc-www's src/discord.js)
+/** The invite-only beta (rsc-www's src/discord.js). */
 export interface BetaAccess {
   enabled: boolean
   loggedIn: boolean
@@ -569,7 +564,7 @@ export interface BetaAccess {
   checked?: number | null
 }
 
-// Staff: one account's Discord link
+/** Staff: one account's Discord link. */
 export interface BetaTesterLink {
   username: string
   discordId: string
@@ -580,7 +575,7 @@ export interface BetaTesterLink {
   checked: number
 }
 
-// Staff: every account linked to Discord (rsc-www's /api/admin/beta-testers)
+/** Staff: every account linked to Discord (rsc-www's /api/admin/beta-testers). */
 export interface BetaTestersData {
   enabled: boolean
   links: BetaTesterLink[]

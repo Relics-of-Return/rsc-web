@@ -40,8 +40,6 @@ interface TimelineRow {
   content: ReactNode
 }
 
-// ---- formatting ----------------------------------------------------------
-
 /** mm:ss before the report was filed, e.g. "-1:12". */
 function formatBefore(t: number, capturedAt: number): string {
   const seconds = Math.max(0, Math.round((capturedAt - t) / 1000))
@@ -65,8 +63,6 @@ function formatTiles(distance: number | null): string {
   if (distance === 0) return 'on the same tile'
   return `${distance} ${distance === 1 ? 'tile' : 'tiles'} away`
 }
-
-// ---- the activity timeline -----------------------------------------------
 
 const ROLE_STYLES: Record<Role, { name: string; border: string }> = {
   accused: { name: 'text-ember', border: 'border-ember/70' },
@@ -257,8 +253,6 @@ function Timeline({ context }: { context: ReportSnapshot }) {
   )
 }
 
-// ---- pieces ---------------------------------------------------------------
-
 function Section({
   title,
   hint,
@@ -425,8 +419,7 @@ function Screenshot({ id, taken }: { id: number; taken: number }) {
         <p className="text-sm text-text-secondary">The screenshot could not be loaded.</p>
       ) : (
         <a href={src} target="_blank" rel="noopener noreferrer" className="block w-fit">
-          {/* an authenticated one-off response from our own API: nothing for the image optimiser to do */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- an authenticated one-off response from our own API: nothing for the image optimiser to do */}
           <img
             src={src}
             alt="The reporter's game view when they opened the report form"
@@ -444,8 +437,6 @@ function Screenshot({ id, taken }: { id: number; taken: number }) {
     </Section>
   )
 }
-
-// ---- the case file --------------------------------------------------------
 
 function CaseFile({ detail }: { detail: AbuseReportDetail }) {
   const { report, context, screenshot, accused, reporter, history } = detail

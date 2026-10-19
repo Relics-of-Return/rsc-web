@@ -9,8 +9,10 @@ import { DISCORD_URL } from '@/lib/constants'
 import type { BetaAccess } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-// what the Discord link said on the way back (/api/discord/callback and
-// /api/discord/link put it in ?discord=)
+/**
+ * what the Discord link said on the way back (/api/discord/callback and
+ * /api/discord/link put it in ?discord=)
+ */
 const RESULTS: Record<string, { text: string; good?: boolean }> = {
   tester: { text: 'Discord linked. You have the Beta Tester role, so World 3 is open to you.', good: true },
   'no-role': {

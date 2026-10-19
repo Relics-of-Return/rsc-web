@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
 
 const FOLDER = path.join(process.cwd(), 'downloads', 'plugins')
 
-// each part plain: no dots in front, nothing that climbs out of the folder
+/** each part plain: no dots in front, nothing that climbs out of the folder */
 const SAFE_PART = /^[A-Za-z0-9_+-][A-Za-z0-9._+-]*$/
 
 const TYPES: Record<string, string> = {

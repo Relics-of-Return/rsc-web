@@ -5,5 +5,4 @@ export const SITE_TAGLINE =
 /** Discord invite shown in the utility bar / footer. */
 export const DISCORD_URL: string = 'https://discord.gg/DtZMaHHfyC'
 
-/** GitHub organisation. */
 export const GITHUB_URL: string = 'https://github.com/Relics-of-Return'

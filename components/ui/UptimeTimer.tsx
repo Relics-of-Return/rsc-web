@@ -20,7 +20,6 @@ export function UptimeTimer({ className }: UptimeTimerProps) {
         const data = await getServerStatus()
         setStartedAt(data.startedAt ?? null)
 
-        // Calculate uptime immediately
         if (data.startedAt) {
           const now = Date.now() / 1000
           setUptime(now - data.startedAt)
@@ -33,7 +32,6 @@ export function UptimeTimer({ className }: UptimeTimerProps) {
     fetchStatus()
   }, [])
 
-  // Live countdown, re-anchored whenever the start time changes.
   useEffect(() => {
     if (startedAt === null) return
 

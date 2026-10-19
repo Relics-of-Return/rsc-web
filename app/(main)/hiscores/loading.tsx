@@ -10,14 +10,12 @@ export default function Loading() {
         <Skeleton className="mx-auto mt-4 h-4 w-96 max-w-full" />
       </div>
 
-      {/* Tab row */}
       <div className="mt-10 flex flex-wrap justify-center gap-2">
         {Array.from({ length: 10 }).map((_, i) => (
           <Skeleton key={i} className="h-7 w-20 rounded-md" />
         ))}
       </div>
 
-      {/* Table */}
       <div className="mt-10 rounded-lg border border-stone-700">
         <div className="border-b border-stone-700 bg-stone-800/80 px-4 py-3">
           <div className="flex gap-6">

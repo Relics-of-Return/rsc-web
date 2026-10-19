@@ -1,4 +1,4 @@
-// rsc-data-server stores a world's country as an ISO 3166 alpha-3 code
+/** rsc-data-server stores a world's country as an ISO 3166 alpha-3 code */
 const COUNTRIES: Record<string, string> = {
   AUS: 'Australia',
   BRA: 'Brazil',
