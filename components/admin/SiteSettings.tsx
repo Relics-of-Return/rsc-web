@@ -121,9 +121,6 @@ export function SiteSettings() {
         <h2 className="font-adventure text-lg uppercase tracking-wide text-gold-400">
           Site Settings
         </h2>
-        <p className="mt-1 text-xs text-text-secondary">
-          Changes everybody sees, from the next page they load. Administrators only.
-        </p>
       </header>
 
       {error && (
@@ -134,13 +131,6 @@ export function SiteSettings() {
 
       <fieldset className="border-b border-stone-700 px-5 py-5" disabled={saving !== null}>
         <legend className="sr-only">Login theme</legend>
-        <p className="text-sm font-medium text-text-primary" aria-hidden="true">
-          Login theme
-        </p>
-        <p className="mt-1 text-xs text-text-secondary">
-          The scene behind the game client&apos;s login screen. Every player sees this one; there
-          is no longer a way to change it in the game.
-        </p>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {THEMES.map((theme) => {
@@ -206,11 +196,6 @@ export function SiteSettings() {
         <div className="flex-1">
           <p id="halloween-logo-label" className="text-sm font-medium text-text-primary">
             Halloween logo
-          </p>
-          <p className="mt-1 text-xs text-text-secondary">
-            The logo with its letters burning with green ghost-fire, in place of the usual one
-            in the navigation and on the home page. The game client shows it with its Halloween
-            login theme whatever this is set to.
           </p>
         </div>
 

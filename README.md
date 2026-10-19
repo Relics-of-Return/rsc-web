@@ -55,7 +55,7 @@ Relics of Return is a non-commercial archival project that preserves the gamepla
 ### Staff tools
 
 - **Administration** (`/admin`) — abuse reports with uploaded screenshots for all staff ranks. Administrators additionally get the command log, news management (Markdown editor with image uploads), guide management for the wiki (create, edit and delete, with revision history and restore) and site settings (the seasonal login theme applied to the game client, and the site-wide Halloween logo). The page only decides what to render — every `/api/admin/*` request is re-checked by `rsc-www`.
-- **World and model editors** — moved to `rsc-editor`, a local application on the game's PC (they read and write the game's files, which this deployed site cannot). The admin page says where to find it.
+
 
 ### Platform and infrastructure
 

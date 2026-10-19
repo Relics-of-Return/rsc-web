@@ -9,11 +9,10 @@ import { CommandLog } from '@/components/admin/CommandLog'
 import { GuideManagement } from '@/components/admin/GuideManagement'
 import { NewsManagement } from '@/components/admin/NewsManagement'
 import { SiteSettings } from '@/components/admin/SiteSettings'
-import { Crown } from '@/components/players/Crown'
 import { Button } from '@/components/ui/Button'
 import { Container } from '@/components/ui/Container'
 import { SectionTitle } from '@/components/ui/SectionTitle'
-import { isAdministrator, isStaff, staffRankName } from '@/data/ranks'
+import { isAdministrator, isStaff } from '@/data/ranks'
 import { useAuth } from '@/hooks/useAuth'
 import { formatUsername } from '@/lib/utils'
 
@@ -74,29 +73,7 @@ export default function AdminPage() {
 
   return (
     <Container className="py-16">
-      <SectionTitle
-        eyebrow="Administration"
-        title="Staff Tools"
-        align="left"
-        description="Moderation tools for the game server. Everything here is visible to staff accounts only."
-      />
-
-      <p className="mt-4 inline-flex items-center gap-2 text-sm text-text-secondary">
-        Signed in as
-        <span className="inline-flex items-center gap-1.5 text-gold-400">
-          <Crown rank={rank} className="h-[22px] w-[26px]" />
-          {formatUsername(user)}
-        </span>
-        <span className="text-text-muted">({staffRankName(rank)})</span>
-      </p>
-
-      {isAdministrator(rank) && (
-        <p className="mt-6 max-w-2xl rounded-md border border-stone-700 bg-stone-800/60 px-4 py-3 text-sm text-text-secondary">
-          The world and model editors are their own application now, <span className="text-gold-400">rsc-editor</span>:
-          start it from the manager on the game&apos;s PC and open{' '}
-          <span className="font-mono text-text-primary">http://127.0.0.1:3020</span>.
-        </p>
-      )}
+      <SectionTitle eyebrow="Administration" title="Staff Tools" align="left" />
 
       <div className="mt-10">
         <div className="overflow-x-auto border-b border-stone-700" role="tablist" aria-label="Administration tools">
