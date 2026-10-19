@@ -15,7 +15,6 @@ import { Container } from '@/components/ui/Container'
 import { SectionTitle } from '@/components/ui/SectionTitle'
 import { isAdministrator, isStaff, staffRankName } from '@/data/ranks'
 import { useAuth } from '@/hooks/useAuth'
-import { canEditWorld } from '@/lib/landscape/access'
 import { formatUsername } from '@/lib/utils'
 
 export default function AdminPage() {
@@ -91,15 +90,12 @@ export default function AdminPage() {
         <span className="text-text-muted">({staffRankName(rank)})</span>
       </p>
 
-      {canEditWorld(rank) && (
-        <div className="mt-6 flex flex-wrap gap-2">
-          <Button asChild variant="outline" size="sm">
-            <Link href="/map/edit">Open the world editor</Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/models/edit">Open the model editor</Link>
-          </Button>
-        </div>
+      {isAdministrator(rank) && (
+        <p className="mt-6 max-w-2xl rounded-md border border-stone-700 bg-stone-800/60 px-4 py-3 text-sm text-text-secondary">
+          The world and model editors are their own application now, <span className="text-gold-400">rsc-editor</span>:
+          start it from the manager on the game&apos;s PC and open{' '}
+          <span className="font-mono text-text-primary">http://127.0.0.1:3020</span>.
+        </p>
       )}
 
       <div className="mt-10">

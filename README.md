@@ -30,7 +30,7 @@ Relics of Return is a non-commercial archival project that preserves the gamepla
 
 - Public pages for the home page, hiscores, news, the Tradepost market, live world maps, the development roadmap and launcher downloads.
 - Account registration and login, sharing one account with the game.
-- Staff tooling: abuse reports, a command log, news and wiki-guide management, site settings, a world editor and a model editor.
+- Staff tooling: abuse reports, a command log, news and wiki-guide management and site settings. The world and model editors are their own local application, [`rsc-editor`](https://github.com/Relics-of-Return/rsc-editor).
 - The game stack is optional for development: the site renders with empty or offline states when `rsc-www` is not reachable, and comes fully alive when it is.
 
 ## Features
@@ -55,12 +55,11 @@ Relics of Return is a non-commercial archival project that preserves the gamepla
 ### Staff tools
 
 - **Administration** (`/admin`) — abuse reports with uploaded screenshots for all staff ranks. Administrators additionally get the command log, news management (Markdown editor with image uploads), guide management for the wiki (create, edit and delete, with revision history and restore) and site settings (the seasonal login theme applied to the game client, and the site-wide Halloween logo). The page only decides what to render — every `/api/admin/*` request is re-checked by `rsc-www`.
-- **World editor** (`/map/edit`, administrators) — edit the ground, walls, scenery, doors, NPC and item spawns and lighting of the world both servers run on, with the game's own renderer drawing the working copy in 3D as it is edited. Saving writes every changed sector at once or none, and is refused for any sector modified since it was loaded, so two editors cannot silently overwrite each other.
-- **Model editor** (`/models/edit`, administrators) — edit the scenery models in the client's assets, previewed live by the game's renderer. Save writes the model source; Pack rebuilds the game's archives, and players see the change after reloading.
+- **World and model editors** — moved to `rsc-editor`, a local application on the game's PC (they read and write the game's files, which this deployed site cannot). The admin page says where to find it.
 
 ### Platform and infrastructure
 
-- **BFF route handlers** (`app/api/*`) proxy `rsc-www` for status, config, worlds, players, news, hiscores, registration, login, logout, sessions, settings, the Tradepost, staff administration and both editors.
+- **BFF route handlers** (`app/api/*`) proxy `rsc-www` for status, config, worlds, players, news, hiscores, registration, login, logout, sessions, settings, the Tradepost, and staff administration.
 - **CORS-enabled public endpoints** (`/api/worlds`, `/api/settings`, `/api/hiscores`, `/api/tradepost`, `/api/news`) let the standalone game client's side panels read hiscores, market and news data from its own origin.
 - **Security headers** on every response: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, a strict referrer policy and a closed permissions policy.
 - **SEO** — Open Graph and Twitter metadata, dynamic per-page titles, `robots.txt` and `sitemap.xml` route handlers, and route-level loading skeletons.
@@ -76,7 +75,7 @@ Relics of Return is a non-commercial archival project that preserves the gamepla
 | Data fetching | Server components and route handlers for first paint; SWR for live polling |
 | Validation | Zod (registration and login forms) |
 | Components and icons | Radix UI Slot, lucide-react, clsx, tailwind-merge |
-| Game data | `@2003scape/rsc-data`, `@2003scape/rsc-world-map`, `@2003scape/rsc-landscape`, `@2003scape/rsc-archiver`, `canvas` |
+| Game data | `@2003scape/rsc-data`, `@2003scape/rsc-world-map`, `canvas` |
 | Linting | ESLint 9 with `eslint-config-next` |
 
 ## Architecture
@@ -104,15 +103,13 @@ Browser
 | `NEXT_PUBLIC_SITE_URL` | Recommended | Public URL used in metadata, Open Graph tags, `robots.txt` and the sitemap (default `http://127.0.0.1:3000`). |
 | `RSC_WWW_PROXY_SECRET` | Production | Shared secret matching `proxySecret` in `rsc-www`'s configuration, so register and login calls forward the visitor's address and per-IP limits apply per visitor. |
 | `RSC_WIKI_URL` | Optional | Destination of the `/wiki` rewrite (default `http://127.0.0.1:3010`). |
-| `RSC_LANDSCAPE_DIR`, `RSC_CLIENT_DATA_DIR`, `RSC_LOCATIONS_DIR`, `RSC_CLIENT_DIST_DIR`, `RSC_CLIENT_DIR`, `RSC_DATA_CONFIG_DIR`, `RSC_ENVIRONMENTS_FILE` | Editors | Path overrides for the world and model editors when the sibling checkouts are not in their default locations next to this repository. |
-| `RSC_MODEL_EDITOR_READONLY` | Optional | Set to `1` to switch saving and packing off in the model editor. |
 
 ## Project structure
 
 ```text
 app/
   (main)/            # site pages: home, play, hiscores, news, tradepost, map,
-                     #   download, roadmap, account, login, register, admin, models/edit
+                     #   download, roadmap, account, login, register, admin
   api/               # BFF route handlers — the only endpoints the browser calls
   downloads/         # launcher self-update and Plugin Hub file routes
   layout.tsx         # root layout and global metadata
@@ -121,12 +118,12 @@ app/
 components/
   layout/ sections/ ui/         # navigation, footer, hero, buttons, skeletons
   players/ news/ tradepost/     # crowns, avatars, article and market pieces
-  world-map/ model-editor/      # map, world editor and model editor interfaces
+  world-map/                    # the live world maps
   admin/ auth/ roadmap/ account/ play/ shared/ skills/
 data/                # navigation, skills, Ironman helms, staff ranks, roadmap, news
 hooks/               # useAuth, useServerStatus, usePlayerPositions, useSiteSettings
 lib/                 # API client, types, server fetchers, items, tradepost, play,
-                     #   site settings, utilities; landscape/ and models/ back the editors
+                     #   site settings, utilities
 public/              # logos, crowns, item and skill sprites, game-mode badges, splash
 downloads/           # published launcher releases and plugin files (git-ignored)
 scripts/             # temper-badges.py — generates the tempered Ironman helms
@@ -165,8 +162,6 @@ All routes below are served by rsc-web under its own origin; those under `/api/*
 
 | Route | Description |
 | --- | --- |
-| `/api/landscape/*` | World editor: sector reads and writes, batch edits, palette, locations, lighting, 3D previews and conflict checks. Administrator session required; enforced by `rsc-www`. |
-| `/api/models/*` | Model editor: model sources, textures, packing and file-change events. Administrator session required; enforced by `rsc-www`. |
 | `/api/admin/*` | Staff tools: abuse reports (list, detail, screenshots, resolve), the command log, news management, guide management and site settings. Staff rank required; re-checked by `rsc-www` on every request. |
 
 ## Deployment
@@ -177,12 +172,12 @@ For the full walkthrough — DNS, tunnel ingress, worlds and certificates — se
 
 ## Related repositories
 
-This repository is one component of the Relics of Return stack, developed together with `rsc-client` (browser game client), `rsc-server` (game server), `rsc-data-server` (account and world persistence), `rsc-data` (shared game data), `rsc-www` (the website's API), `rsc-wiki` (the data-driven wiki), `rsc-manager` (service manager and dashboard) and the Tauri-based desktop launcher. The GitHub organisation is at <https://github.com/Relics-of-Return>.
+This repository is one component of the Relics of Return stack, developed together with `rsc-client` (browser game client), `rsc-server` (game server), `rsc-data-server` (account and world persistence), `rsc-data` (shared game data), `rsc-www` (the website's API), `rsc-wiki` (the data-driven wiki), `rsc-manager` (service manager and dashboard), `rsc-editor` (the world and model editors) and the Tauri-based desktop launcher. The GitHub organisation is at <https://github.com/Relics-of-Return>.
 
 ## Credits and license
 
 - **[2003Scape](https://github.com/2003scape)**: the client, server and data projects this is built on.
-- **[OSRS World](https://osrs.world/)**: the world map editor's interface is based on theirs.
+- **[OSRS World](https://osrs.world/)**: the world map editor's interface (now in `rsc-editor`) is based on theirs.
 
 ## License
 

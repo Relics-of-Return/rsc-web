@@ -6,13 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "test": "node --test test/*.test.mjs"
+    "lint": "eslint"
   },
   "dependencies": {
-    "@2003scape/rsc-archiver": "^1.1.1",
     "@2003scape/rsc-data": "^1.0.18",
-    "@2003scape/rsc-landscape": "^2.0.1",
     "@2003scape/rsc-world-map": "^1.0.0",
     "@radix-ui/react-slot": "^1.3.0",
     "canvas": "^3.2.3",

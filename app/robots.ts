@@ -13,8 +13,6 @@ export default function robots(): MetadataRoute.Robots {
         '/downloads/',
         '/account',
         '/admin',
-        '/map/edit',
-        '/models/edit',
       ],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,

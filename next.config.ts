@@ -3,11 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['127.0.0.1', 'localhost'],
 
-  serverExternalPackages: [
-    'canvas',
-    '@2003scape/rsc-landscape',
-    '@2003scape/rsc-archiver',
-  ],
+  serverExternalPackages: ['canvas'],
 
   async rewrites() {
     const wiki = process.env.RSC_WIKI_URL ?? 'http://127.0.0.1:3010'
