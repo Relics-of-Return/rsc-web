@@ -103,16 +103,17 @@ export const roadmapItems: RoadmapItem[] = [
     ],
   },
   {
-    id: 'gathering-animations',
-    title: 'Gathering animations',
+    id: 'skilling-animations',
+    title: 'Skilling animations',
     stage: 'dev',
     area: 'client',
-    summary: 'Old school’s animations for woodcutting, mining, fishing and thieving.',
+    summary: 'OSRS animations for skilling.',
     image: { src: '/roadmap/mining-animation.gif', alt: 'Mining animation', width: 250, height: 250 },
     highlights: [
       'Woodcutting animation',
       'Mining animation',
-      'Fishing animation',
+      'Fishing animation (net fishing, rod/fly fishing, harpoon & lobster pot)',
+      'Firemaking animations'
     ],
     remaining: [
       'Thieving animation',
@@ -123,7 +124,6 @@ export const roadmapItems: RoadmapItem[] = [
       'Agility animation',
       'Prayer animation',
       'Herblaw animation',
-      'Firemaking animation',
       'Cooking animation',
       'Crafting animation',
       'Smithing animation',
