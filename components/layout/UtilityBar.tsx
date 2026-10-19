@@ -7,42 +7,19 @@ import { Container } from '@/components/ui/Container'
 import { isStaff } from '@/data/ranks'
 import { GITHUB_URL } from '@/lib/constants'
 import { useAuth } from '@/hooks/useAuth'
-import { useServerStatus } from '@/hooks/useServerStatus'
-import { formatNumber, formatUsername } from '@/lib/utils'
+import { formatUsername } from '@/lib/utils'
+
+import { LiveTicker } from './LiveTicker'
 
 export function UtilityBar() {
-  const { status, loading } = useServerStatus()
   const { user, rank, loading: authLoading } = useAuth()
 
   return (
     <div className="bg-stone-950 border-b border-stone-800 text-xs">
       <Container>
-        <div className="flex items-center justify-between py-2">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5 text-text-secondary">
-              <span
-                className={
-                  'w-2 h-2 rounded-full ' +
-                  (loading || !status
-                    ? 'bg-stone-600'
-                    : status.connected
-                      ? 'bg-moss animate-pulse'
-                      : 'bg-rune-red')
-                }
-                aria-hidden="true"
-              />
-              <span data-testid="online-count">
-                {loading ? '...' : `${formatNumber(status?.online)} online`}
-              </span>
-            </span>
-            <span
-              className="hidden sm:flex items-center gap-1.5 text-text-muted"
-              data-testid="registered-count"
-            >
-              {formatNumber(status?.registered)} accounts
-            </span>
-          </div>
-          <div className="flex items-center gap-3 sm:gap-5">
+        <div className="flex items-center justify-between gap-4 py-2">
+          <LiveTicker className="mr-4 flex-1" />
+          <div className="flex shrink-0 items-center gap-3 sm:gap-5">
             <a
               href={GITHUB_URL}
               target="_blank"

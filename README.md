@@ -1,6 +1,6 @@
 # Relics of Return — Web
 
-![Next.js](https://img.shields.io/badge/Next.js-16.2-black?logo=nextdotjs)
+![Next.js](https://img.shields.io/badge/Next.js-16.4.2-black?logo=nextdotjs)
 ![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38bdf8?logo=tailwindcss&logoColor=white)
