@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { ArrowRight, ChevronRight, Newspaper } from 'lucide-react'
 
 import { HeroSection } from '@/components/sections/HeroSection'
-import { StatusStrip } from '@/components/sections/EventsStrip'
+import { RealmEvents } from '@/components/sections/RealmEvents'
+import { Reveal } from '@/components/ui/Reveal'
 import { newsCategoryStyle } from '@/data/news'
 import { GITHUB_URL } from '@/lib/constants'
 import { landingFontVariables } from '@/lib/fonts'
@@ -20,51 +21,65 @@ async function getLatestNews() {
   }
 }
 
+/**
+ * the moment of this render, so the countdowns start from the same second in
+ * the server's html and the browser's first paint
+ */
+async function getRenderTime() {
+  return Math.floor(Date.now() / 1000)
+}
+
 export default async function HomePage() {
-  const [featured, ...rest] = await getLatestNews()
+  const [[featured, ...rest], serverNow] = await Promise.all([getLatestNews(), getRenderTime()])
 
   return (
     <div className={cn(landingFontVariables, 'bg-[#0d0b08] font-sans-body')}>
       <HeroSection />
-      <StatusStrip />
+      <RealmEvents serverNow={serverNow} />
 
       <section className="relative overflow-hidden bg-[#14110d] py-16 lg:py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-10 flex flex-col justify-between border-b-2 border-[#3c3021] pb-4 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-3">
-              <Newspaper className="h-6 w-6 text-[#f2ca50]" aria-hidden="true" />
-              <h2 className="font-adventure text-3xl font-bold tracking-wide text-[#f5ebd9] sm:text-4xl">
-                News &amp; Updates
-              </h2>
+          <Reveal>
+            <div className="mb-10 flex flex-col justify-between border-b-2 border-[#3c3021] pb-4 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-3">
+                <Newspaper className="h-6 w-6 text-[#f2ca50]" aria-hidden="true" />
+                <h2 className="font-adventure text-3xl font-bold tracking-wide text-[#f5ebd9] sm:text-4xl">
+                  News &amp; Updates
+                </h2>
+              </div>
+              <div className="mt-3 flex items-center gap-4 font-adventure text-xs sm:mt-0 sm:text-sm">
+                <a
+                  href={GITHUB_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#d0c5af] transition-colors hover:text-[#f2ca50]"
+                >
+                  GitHub
+                </a>
+                <span className="text-[#3c3021]" aria-hidden="true">
+                  |
+                </span>
+                <Link
+                  href="/news"
+                  className="text-[#f2ca50] transition-colors hover:text-[#ffe088] hover:underline"
+                >
+                  News Archive
+                </Link>
+              </div>
             </div>
-            <div className="mt-3 flex items-center gap-4 font-adventure text-xs sm:mt-0 sm:text-sm">
-              <a
-                href={GITHUB_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#d0c5af] transition-colors hover:text-[#f2ca50]"
-              >
-                GitHub
-              </a>
-              <span className="text-[#3c3021]" aria-hidden="true">
-                |
-              </span>
-              <Link
-                href="/news"
-                className="text-[#f2ca50] transition-colors hover:text-[#ffe088] hover:underline"
-              >
-                News Archive
-              </Link>
-            </div>
-          </div>
+          </Reveal>
 
           {featured ? (
             <>
-              <FeaturedStory article={featured} />
+              <Reveal>
+                <FeaturedStory article={featured} />
+              </Reveal>
               {rest.length > 0 && (
                 <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-3">
-                  {rest.map((article) => (
-                    <StoryCard key={article.id} article={article} />
+                  {rest.map((article, index) => (
+                    <Reveal key={article.id} delay={index * 120} className="grid">
+                      <StoryCard article={article} />
+                    </Reveal>
                   ))}
                 </div>
               )}
@@ -73,18 +88,20 @@ export default async function HomePage() {
             <p className="mb-12 py-10 text-center text-[#d0c5af]">No news has been posted yet.</p>
           )}
 
-          <div className="flex flex-col items-center justify-between gap-6 rounded-sm border border-[#3c3021] bg-[#1b150f] p-6 text-center shadow-lg sm:flex-row sm:text-left">
-            <p className="max-w-2xl text-xs leading-relaxed text-[#d0c5af] sm:text-sm">
-              Older posts, patch notes and past announcements all live in the news archive.
-            </p>
-            <Link
-              href="/news"
-              className="fx-shimmer inline-flex shrink-0 items-center gap-2 rounded-sm border border-[#f2ca50]/50 bg-gradient-to-b from-gold-500 to-[#a88219] px-6 py-2.5 font-adventure text-sm font-bold uppercase tracking-wide text-[#3c2f00] shadow-[0_0_15px_rgba(212,175,55,0.35)] transition-all hover:from-[#e9c349] hover:to-[#bfa02c] hover:shadow-[0_0_24px_rgba(212,175,55,0.6)] active:translate-y-0.5"
-            >
-              View All News
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
-          </div>
+          <Reveal>
+            <div className="flex flex-col items-center justify-between gap-6 rounded-sm border border-[#3c3021] bg-[#1b150f] p-6 text-center shadow-lg sm:flex-row sm:text-left">
+              <p className="max-w-2xl text-xs leading-relaxed text-[#d0c5af] sm:text-sm">
+                Older posts, patch notes and past announcements all live in the news archive.
+              </p>
+              <Link
+                href="/news"
+                className="fx-shimmer inline-flex shrink-0 items-center gap-2 rounded-sm border border-[#f2ca50]/50 bg-gradient-to-b from-gold-500 to-[#a88219] px-6 py-2.5 font-adventure text-sm font-bold uppercase tracking-wide text-[#3c2f00] shadow-[0_0_15px_rgba(212,175,55,0.35)] transition-all hover:from-[#e9c349] hover:to-[#bfa02c] hover:shadow-[0_0_24px_rgba(212,175,55,0.6)] active:translate-y-0.5"
+              >
+                View All News
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            </div>
+          </Reveal>
         </div>
       </section>
     </div>
