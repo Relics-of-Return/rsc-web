@@ -126,6 +126,8 @@ export async function measureRoundTrip(
 
   const probe = (nonce: number): string => {
     const url = new URL(base);
+    url.pathname = "/favicon.png";
+    url.search = "";
     url.searchParams.set("ping", String(nonce));
 
     return url.toString();
