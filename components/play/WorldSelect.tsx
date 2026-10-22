@@ -1,61 +1,60 @@
-'use client'
+"use client";
 
-import Image from 'next/image'
-import { useMemo, useState } from 'react'
-import useSWR from 'swr'
+import Image from "next/image";
+import { useMemo, useState } from "react";
+import useSWR from "swr";
 
-import { SectionTitle } from '@/components/ui/SectionTitle'
-import { getWorlds } from '@/lib/api'
-import { countryName } from '@/lib/countries'
-import { gameURL } from '@/lib/play'
-import type { WorldEntry } from '@/lib/types'
-import { cn, formatNumber } from '@/lib/utils'
+import { SectionTitle } from "@/components/ui/SectionTitle";
+import { getWorlds } from "@/lib/api";
+import { countryName } from "@/lib/countries";
+import { gameURL } from "@/lib/play";
+import type { WorldEntry } from "@/lib/types";
+import { cn, formatNumber } from "@/lib/utils";
 
+import { PingValue } from "./PingValue";
+import { useWorldPings } from "./useWorldPings";
 
-const REFRESH_INTERVAL = 15_000
+const REFRESH_INTERVAL = 15_000;
 
-type SortKey = 'world' | 'players' | 'location' | 'type' | 'activity'
+type SortKey = "world" | "players" | "ping" | "location" | "type" | "activity";
 
 interface Sort {
-  key: SortKey
-  ascending: boolean
+  key: SortKey;
+  ascending: boolean;
 }
 
 const COLUMNS: { key: SortKey; label: string; right?: boolean }[] = [
-  { key: 'world', label: 'World' },
-  { key: 'players', label: 'Players', right: true },
-  { key: 'location', label: 'Location' },
-  { key: 'type', label: 'Type' },
-  { key: 'activity', label: 'Activity' },
-]
+  { key: "world", label: "World" },
+  { key: "players", label: "Players", right: true },
+  { key: "ping", label: "Ping", right: true },
+  { key: "location", label: "Location" },
+  { key: "type", label: "Type" },
+  { key: "activity", label: "Activity" },
+];
 
 function worldName(world: WorldEntry): string {
-  return world.name ?? `World ${world.id}`
+  return world.name ?? `World ${world.id}`;
 }
 
 function isOnline(world: WorldEntry): boolean {
-  return Boolean(world.online)
+  return Boolean(world.online);
 }
 
 function typeOf(world: WorldEntry): string {
-  return world.members ? 'Members' : 'Free'
+  return world.members ? "Members" : "Free";
 }
 
 function activityOf(world: WorldEntry): string {
-  return world.botting ? 'Botting allowed' : '-'
+  return world.botting ? "Botting allowed" : "-";
 }
 
 function playersText(world: WorldEntry): string {
-  const players = world.players ?? 0
-  return `${formatNumber(players)} ${players === 1 ? 'player' : 'players'}`
+  const players = world.players ?? 0;
+  return `${formatNumber(players)} ${players === 1 ? "player" : "players"}`;
 }
 
-/**
- * the world's own game page; /play?world=N redirects there too, for a world
- * list that hasn't loaded its URL
- */
 function playHref(world: WorldEntry): string {
-  return gameURL(world) ?? `/play?world=${world.id}`
+  return gameURL(world) ?? `/play?world=${world.id}`;
 }
 
 function WorldIcon({ world }: { world: WorldEntry }) {
@@ -63,8 +62,8 @@ function WorldIcon({ world }: { world: WorldEntry }) {
     <Image
       src={
         world.id === 3
-          ? '/worlds/beta_testing_world_icon.webp'
-          : '/worlds/members_world_icon.webp'
+          ? "/worlds/beta_testing_world_icon.webp"
+          : "/worlds/members_world_icon.webp"
       }
       alt=""
       aria-hidden="true"
@@ -73,87 +72,102 @@ function WorldIcon({ world }: { world: WorldEntry }) {
       unoptimized
       className="shrink-0 object-contain"
     />
-  )
+  );
 }
 
 const SORT_VALUE: Record<SortKey, (world: WorldEntry) => string | number> = {
   world: (world) => world.id,
-  // offline worlds sort below empty ones
   players: (world) => (isOnline(world) ? (world.players ?? 0) : -1),
+  ping: () => Number.POSITIVE_INFINITY,
   location: (world) => countryName(world.country),
   type: typeOf,
   activity: activityOf,
-}
+};
 
-export function WorldSelect({ initialWorlds }: { initialWorlds: WorldEntry[] }) {
-  const [sort, setSort] = useState<Sort>({ key: 'world', ascending: true })
+export function WorldSelect({
+  initialWorlds,
+}: {
+  initialWorlds: WorldEntry[];
+}) {
+  const [sort, setSort] = useState<Sort>({ key: "world", ascending: true });
 
-  const { data } = useSWR('/api/worlds', getWorlds, {
+  const { data } = useSWR("/api/worlds", getWorlds, {
     fallbackData: { worlds: initialWorlds },
     refreshInterval: REFRESH_INTERVAL,
-  })
+  });
 
-  const worlds = data?.worlds ?? initialWorlds
+  const worlds = data?.worlds ?? initialWorlds;
+
+  const pings = useWorldPings(worlds);
 
   const sorted = useMemo(() => {
-    const value = SORT_VALUE[sort.key]
+    const value =
+      sort.key === "ping"
+        ? (world: WorldEntry) => pings[world.id] ?? Number.POSITIVE_INFINITY
+        : SORT_VALUE[sort.key];
 
     return [...worlds].sort((a, b) => {
-      const x = value(a)
-      const y = value(b)
+      const x = value(a);
+      const y = value(b);
       const order =
-        typeof x === 'number' && typeof y === 'number'
+        typeof x === "number" && typeof y === "number"
           ? x - y
-          : String(x).localeCompare(String(y))
+          : String(x).localeCompare(String(y));
 
-      return (sort.ascending ? order : -order) || a.id - b.id
-    })
-  }, [worlds, sort])
+      return (sort.ascending ? order : -order) || a.id - b.id;
+    });
+  }, [pings, worlds, sort]);
 
   const playing = worlds.reduce(
     (total, world) => total + (isOnline(world) ? (world.players ?? 0) : 0),
     0,
-  )
+  );
 
   function toggleSort(key: SortKey) {
     setSort((current) =>
       current.key === key
         ? { key, ascending: !current.ascending }
-        : { key, ascending: key !== 'players' },
-    )
+        : { key, ascending: key !== "players" },
+    );
   }
 
   return (
     <div>
-      <SectionTitle
-        title="Select a world"
-      />
+      <SectionTitle title="Select a world" />
 
       <p className="mt-3 text-center text-text-secondary">
-        There {playing === 1 ? 'is' : 'are'} currently{' '}
-        <span className="font-semibold text-gold-400">{formatNumber(playing)}</span>{' '}
-        {playing === 1 ? 'person' : 'people'} playing!
+        There {playing === 1 ? "is" : "are"} currently{" "}
+        <span className="font-semibold text-gold-400">
+          {formatNumber(playing)}
+        </span>{" "}
+        {playing === 1 ? "person" : "people"} playing!
       </p>
 
       <section aria-labelledby="advanced-select" className="mt-10">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-        </div>
+        <div className="flex flex-wrap items-baseline justify-between gap-2"></div>
 
         <div className="mt-4 overflow-x-auto rounded-lg border border-stone-700">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-stone-700 bg-stone-800/80">
                 {COLUMNS.map((column) => {
-                  const active = sort.key === column.key
+                  const active = sort.key === column.key;
 
                   return (
                     <th
                       key={column.key}
                       scope="col"
                       aria-sort={
-                        active ? (sort.ascending ? 'ascending' : 'descending') : 'none'
+                        active
+                          ? sort.ascending
+                            ? "ascending"
+                            : "descending"
+                          : "none"
                       }
-                      className={cn('px-4 py-3', column.right ? 'text-right' : 'text-left')}
+                      className={cn(
+                        "px-4 py-3",
+                        column.right ? "text-right" : "text-left",
+                      )}
                     >
                       <button
                         type="button"
@@ -163,33 +177,40 @@ export function WorldSelect({ initialWorlds }: { initialWorlds: WorldEntry[] }) 
                         {column.label}
                         <span
                           aria-hidden="true"
-                          className={cn('text-[0.65rem]', active ? 'opacity-100' : 'opacity-30')}
+                          className={cn(
+                            "text-[0.65rem]",
+                            active ? "opacity-100" : "opacity-30",
+                          )}
                         >
-                          {active && !sort.ascending ? '▼' : '▲'}
+                          {active && !sort.ascending ? "▼" : "▲"}
                         </span>
                       </button>
                     </th>
-                  )
+                  );
                 })}
               </tr>
             </thead>
             <tbody>
               {sorted.map((world) => {
-                const online = isOnline(world)
+                const online = isOnline(world);
 
                 return (
                   <tr
                     key={world.id}
-                    onClick={online ? () => window.location.assign(playHref(world)) : undefined}
+                    onClick={
+                      online
+                        ? () => window.location.assign(playHref(world))
+                        : undefined
+                    }
                     className={cn(
-                      'border-b border-stone-800 transition-colors last:border-0',
-                      online ? 'cursor-pointer hover:bg-stone-800/60' : 'opacity-55',
+                      "border-b border-stone-800 transition-colors last:border-0",
+                      online
+                        ? "cursor-pointer hover:bg-stone-800/60"
+                        : "opacity-55",
                     )}
                   >
                     <td className="px-4 py-3">
                       {online ? (
-                        // a plain link: the game is a page of its own, on
-                        // its own host, not a route of this site
                         <a
                           href={playHref(world)}
                           onClick={(event) => event.stopPropagation()}
@@ -208,10 +229,21 @@ export function WorldSelect({ initialWorlds }: { initialWorlds: WorldEntry[] }) 
                       )}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-text-primary">
-                      {online ? playersText(world) : 'Offline'}
+                      {online ? playersText(world) : "Offline"}
                     </td>
-                    <td className="px-4 py-3 text-text-secondary">{countryName(world.country)}</td>
-                    <td className="px-4 py-3 text-text-secondary">{typeOf(world)}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      {online ? (
+                        <PingValue ping={pings[world.id]} />
+                      ) : (
+                        <span className="text-text-muted">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-text-secondary">
+                      {countryName(world.country)}
+                    </td>
+                    <td className="px-4 py-3 text-text-secondary">
+                      {typeOf(world)}
+                    </td>
                     <td className="px-4 py-3">
                       {world.botting ? (
                         <span className="inline-flex items-center rounded border border-moss/50 bg-moss/10 px-2 py-0.5 text-xs text-moss">
@@ -222,12 +254,12 @@ export function WorldSelect({ initialWorlds }: { initialWorlds: WorldEntry[] }) 
                       )}
                     </td>
                   </tr>
-                )
+                );
               })}
             </tbody>
           </table>
         </div>
       </section>
     </div>
-  )
+  );
 }
