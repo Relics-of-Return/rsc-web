@@ -1,48 +1,52 @@
-import Image from 'next/image'
-import Link from 'next/link'
-import { ArrowRight, ChevronRight, Newspaper } from 'lucide-react'
+import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, ChevronRight, Newspaper } from "lucide-react";
 
-import { HeroSection } from '@/components/sections/HeroSection'
-import { RealmEvents } from '@/components/sections/RealmEvents'
-import { Reveal } from '@/components/ui/Reveal'
-import { newsCategoryStyle } from '@/data/news'
-import { GITHUB_URL } from '@/lib/constants'
-import { landingFontVariables } from '@/lib/fonts'
-import type { NewsListData, NewsSummaryArticle } from '@/lib/types'
-import { cn, formatNewsDate } from '@/lib/utils'
-import { fetchWwwJson } from '@/lib/www'
+import { HeroSection } from "@/components/sections/HeroSection";
+import { RealmEvents } from "@/components/sections/RealmEvents";
+import { VoteSection } from "@/components/sections/VoteSection";
+import { Reveal } from "@/components/ui/Reveal";
+import { newsCategoryStyle } from "@/data/news";
+import { GITHUB_URL } from "@/lib/constants";
+import { landingFontVariables } from "@/lib/fonts";
+import type { NewsListData, NewsSummaryArticle } from "@/lib/types";
+import { cn, formatNewsDate } from "@/lib/utils";
+import { fetchWwwJson } from "@/lib/www";
 
 async function getLatestNews() {
   try {
-    const data = await fetchWwwJson<NewsListData>('/api/news?page=0')
-    return data.articles.slice(0, 4)
+    const data = await fetchWwwJson<NewsListData>("/api/news?page=0");
+    return data.articles.slice(0, 4);
   } catch {
-    return []
+    return [];
   }
 }
 
-/**
- * the moment of this render, so the countdowns start from the same second in
- * the server's html and the browser's first paint
- */
 async function getRenderTime() {
-  return Math.floor(Date.now() / 1000)
+  return Math.floor(Date.now() / 1000);
 }
 
 export default async function HomePage() {
-  const [[featured, ...rest], serverNow] = await Promise.all([getLatestNews(), getRenderTime()])
+  const [[featured, ...rest], serverNow] = await Promise.all([
+    getLatestNews(),
+    getRenderTime(),
+  ]);
 
   return (
-    <div className={cn(landingFontVariables, 'bg-[#0d0b08] font-sans-body')}>
+    <div className={cn(landingFontVariables, "bg-[#0d0b08] font-sans-body")}>
       <HeroSection />
       <RealmEvents serverNow={serverNow} />
+      <VoteSection />
 
-      <section className="relative overflow-hidden bg-[#14110d] py-16 lg:py-24">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden bg-[#110e0a] py-16 lg:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <Reveal>
             <div className="mb-10 flex flex-col justify-between border-b-2 border-[#3c3021] pb-4 sm:flex-row sm:items-center">
               <div className="flex items-center gap-3">
-                <Newspaper className="h-6 w-6 text-[#f2ca50]" aria-hidden="true" />
+                <Newspaper
+                  className="h-6 w-6 text-[#f2ca50]"
+                  aria-hidden="true"
+                />
                 <h2 className="font-adventure text-3xl font-bold tracking-wide text-[#f5ebd9] sm:text-4xl">
                   News &amp; Updates
                 </h2>
@@ -77,7 +81,11 @@ export default async function HomePage() {
               {rest.length > 0 && (
                 <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-3">
                   {rest.map((article, index) => (
-                    <Reveal key={article.id} delay={index * 120} className="grid">
+                    <Reveal
+                      key={article.id}
+                      delay={index * 120}
+                      className="grid"
+                    >
                       <StoryCard article={article} />
                     </Reveal>
                   ))}
@@ -85,13 +93,16 @@ export default async function HomePage() {
               )}
             </>
           ) : (
-            <p className="mb-12 py-10 text-center text-[#d0c5af]">No news has been posted yet.</p>
+            <p className="mb-12 py-10 text-center text-[#d0c5af]">
+              No news has been posted yet.
+            </p>
           )}
 
           <Reveal>
             <div className="flex flex-col items-center justify-between gap-6 rounded-sm border border-[#3c3021] bg-[#1b150f] p-6 text-center shadow-lg sm:flex-row sm:text-left">
               <p className="max-w-2xl text-xs leading-relaxed text-[#d0c5af] sm:text-sm">
-                Older posts, patch notes and past announcements all live in the news archive.
+                Older posts, patch notes and past announcements all live in the
+                news archive.
               </p>
               <Link
                 href="/news"
@@ -105,11 +116,11 @@ export default async function HomePage() {
         </div>
       </section>
     </div>
-  )
+  );
 }
 
 function FeaturedStory({ article }: { article: NewsSummaryArticle }) {
-  const style = newsCategoryStyle(article.category)
+  const style = newsCategoryStyle(article.category);
 
   return (
     <article className="banner-frame group relative mb-12 overflow-hidden rounded-sm bg-[#1b150e] shadow-2xl">
@@ -130,10 +141,10 @@ function FeaturedStory({ article }: { article: NewsSummaryArticle }) {
             <div className="mb-4 flex items-center gap-3">
               <span
                 className={cn(
-                  'rounded-sm border px-2.5 py-0.5 font-adventure text-xs uppercase tracking-wider shadow-sm',
+                  "rounded-sm border px-2.5 py-0.5 font-adventure text-xs uppercase tracking-wider shadow-sm",
                   style.borderColor,
                   style.bgColor,
-                  style.textColor
+                  style.textColor,
                 )}
               >
                 {style.label}
@@ -146,7 +157,10 @@ function FeaturedStory({ article }: { article: NewsSummaryArticle }) {
               </time>
             </div>
             <h3 className="mb-3 font-adventure text-2xl font-bold leading-snug text-[#f2ca50] transition-colors group-hover:text-[#ffe088] sm:text-3xl">
-              <Link href={`/news/${article.id}`} className="after:absolute after:inset-0">
+              <Link
+                href={`/news/${article.id}`}
+                className="after:absolute after:inset-0"
+              >
                 {article.title}
               </Link>
             </h3>
@@ -166,12 +180,12 @@ function FeaturedStory({ article }: { article: NewsSummaryArticle }) {
         </div>
       </div>
     </article>
-  )
+  );
 }
 
 function StoryCard({ article }: { article: NewsSummaryArticle }) {
-  const style = newsCategoryStyle(article.category)
-  const { Icon } = style
+  const style = newsCategoryStyle(article.category);
+  const { Icon } = style;
 
   return (
     <article className="stone-frame group relative flex flex-col justify-between overflow-hidden rounded-sm bg-[#1b150e] shadow-xl">
@@ -180,16 +194,16 @@ function StoryCard({ article }: { article: NewsSummaryArticle }) {
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(212,175,55,0.16),transparent_65%)]" />
           <Icon
             className={cn(
-              'absolute -bottom-6 -right-4 h-36 w-36 opacity-20 transition-transform duration-500 group-hover:scale-110',
-              style.textColor
+              "absolute -bottom-6 -right-4 h-36 w-36 opacity-20 transition-transform duration-500 group-hover:scale-110",
+              style.textColor,
             )}
             aria-hidden="true"
           />
           <span
             className={cn(
-              'absolute left-2.5 top-2.5 rounded-sm border bg-[#14100b]/90 px-2 py-0.5 font-adventure text-[11px] uppercase tracking-wider backdrop-blur-sm',
+              "absolute left-2.5 top-2.5 rounded-sm border bg-[#14100b]/90 px-2 py-0.5 font-adventure text-[11px] uppercase tracking-wider backdrop-blur-sm",
               style.borderColor,
-              style.textColor
+              style.textColor,
             )}
           >
             {style.label}
@@ -203,11 +217,16 @@ function StoryCard({ article }: { article: NewsSummaryArticle }) {
             {formatNewsDate(article.date)}
           </time>
           <h4 className="mb-2.5 font-adventure text-lg font-bold leading-snug text-[#f2ca50] transition-colors group-hover:text-[#ffe088]">
-            <Link href={`/news/${article.id}`} className="after:absolute after:inset-0">
+            <Link
+              href={`/news/${article.id}`}
+              className="after:absolute after:inset-0"
+            >
               {article.title}
             </Link>
           </h4>
-          <p className="line-clamp-3 text-xs leading-relaxed text-[#d0c5af]">{article.summary}</p>
+          <p className="line-clamp-3 text-xs leading-relaxed text-[#d0c5af]">
+            {article.summary}
+          </p>
         </div>
       </div>
       <div className="border-t border-[#291f14] p-5 pt-3">
@@ -220,5 +239,5 @@ function StoryCard({ article }: { article: NewsSummaryArticle }) {
         </span>
       </div>
     </article>
-  )
+  );
 }

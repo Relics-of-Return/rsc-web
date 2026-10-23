@@ -1,50 +1,76 @@
-import type { ClassValue } from 'clsx'
-import { clsx } from 'clsx'
-import { twMerge } from 'tailwind-merge'
+import type { ClassValue } from "clsx";
+import { clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 /** Formats a number with US-style thousands separators. */
 export function formatNumber(value: number | undefined | null): string {
-  return Number(value ?? 0).toLocaleString('en-US')
+  return Number(value ?? 0).toLocaleString("en-US");
 }
 
 /** Formats a unix timestamp (seconds) as a human-readable date. */
 export function formatUnixDate(unixSeconds: number | undefined | null): string {
-  if (!unixSeconds) return ''
-  return new Date(unixSeconds * 1000).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
+  if (!unixSeconds) return "";
+  return new Date(unixSeconds * 1000).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 /** Formats a unix timestamp (seconds) as a date and time, or a dash when unset. */
-export function formatUnixDateTime(unixSeconds: number | undefined | null): string {
-  if (!unixSeconds) return '—'
-  return new Date(unixSeconds * 1000).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  })
+export function formatUnixDateTime(
+  unixSeconds: number | undefined | null,
+): string {
+  if (!unixSeconds) return "—";
+  return new Date(unixSeconds * 1000).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 /** Formats a unix timestamp (seconds) as DD Month YYYY (e.g., "20 September 2026"). */
 export function formatNewsDate(unixSeconds: number | undefined | null): string {
-  if (!unixSeconds) return ''
-  return new Date(unixSeconds * 1000).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
+  if (!unixSeconds) return "";
+  return new Date(unixSeconds * 1000).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+const SHORT_MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+/** Formats a unix timestamp (seconds) as D Mon YYYY in UTC (e.g., "8 Sep 2026"), for tight table cells. */
+export function formatShortDate(
+  unixSeconds: number | undefined | null,
+): string {
+  if (!unixSeconds) return "";
+  const date = new Date(unixSeconds * 1000);
+  return `${date.getUTCDate()} ${SHORT_MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 }
 
 /** The display form of a username: usernames are stored lowercase, every surface shows them with a capital first letter. */
 export function formatUsername(username: string | null | undefined): string {
-  if (!username) return ''
-  return username.charAt(0).toUpperCase() + username.slice(1)
+  if (!username) return "";
+  return username.charAt(0).toUpperCase() + username.slice(1);
 }

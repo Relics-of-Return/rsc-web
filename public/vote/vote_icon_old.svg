@@ -1,0 +1,40 @@
+<svg width="640" height="420" viewBox="0 0 640 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="voteBallotGold" x1="196" y1="102" x2="454" y2="328" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF1B8"/>
+      <stop offset="0.46" stop-color="#FFD46B"/>
+      <stop offset="1" stop-color="#B6762C"/>
+    </linearGradient>
+    <linearGradient id="voteBallotInk" x1="230" y1="92" x2="420" y2="326" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1C1028"/>
+      <stop offset="1" stop-color="#07040D"/>
+    </linearGradient>
+    <radialGradient id="voteBallotGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(320 226) rotate(90) scale(170 230)">
+      <stop stop-color="#FFD46B" stop-opacity="0.24"/>
+      <stop offset="0.58" stop-color="#A34DFF" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#A34DFF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="voteBallotShadow" x="112" y="48" width="416" height="328" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="20" stdDeviation="18" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <rect width="640" height="420" fill="url(#voteBallotGlow)"/>
+
+  <g filter="url(#voteBallotShadow)">
+    <path d="M224 216H416L454 258V326H186V258L224 216Z" fill="url(#voteBallotInk)" stroke="url(#voteBallotGold)" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M208 256H432" stroke="#FFF1B8" stroke-width="10" stroke-linecap="round"/>
+    <path d="M236 216H404L430 246H210L236 216Z" fill="#12081A" stroke="url(#voteBallotGold)" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M268 244H372" stroke="#05030A" stroke-width="10" stroke-linecap="round"/>
+
+    <rect x="222" y="278" width="196" height="34" rx="4" fill="#FFF1B8"/>
+    <text x="320" y="302" text-anchor="middle" fill="#07040D" font-family="Cinzel, Georgia, serif" font-size="24" font-weight="800" letter-spacing="3">VOTE</text>
+
+    <path d="M337 116L396 174L356 214L297 156L337 116Z" fill="#FFF1B8" stroke="#07040D" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M348 144L366 162" stroke="#A34DFF" stroke-width="5" stroke-linecap="round"/>
+
+    <path d="M284 126C298 117 314 118 327 130L367 170C375 178 375 191 367 199C359 207 346 207 338 199L313 174L299 188C294 193 286 193 281 188C276 183 276 175 281 170L295 156L278 139C275 136 275 130 284 126Z" fill="#07040D" stroke="url(#voteBallotGold)" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M314 132L366 80L428 142L376 194L314 132Z" fill="#07040D" stroke="url(#voteBallotGold)" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M402 82L430 110" stroke="#FFF1B8" stroke-width="16" stroke-linecap="square"/>
+  </g>
+</svg>
