@@ -69,7 +69,7 @@ Relics of Return is a non-commercial archival project that preserves the gamepla
 
 | Area | Technology |
 | --- | --- |
-| Framework | Next.js 16.2 (App Router, React Server Components) |
+| Framework | Next.js 16.4.2 (App Router, React Server Components) |
 | UI | React 19, Tailwind CSS 4 (`@theme` tokens), a custom pixel font |
 | Language | TypeScript 5 in strict mode |
 | Data fetching | Server components and route handlers for first paint; SWR for live polling |

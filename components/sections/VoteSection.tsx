@@ -124,7 +124,7 @@ export function VoteSection() {
                     width={640}
                     height={420}
                     unoptimized
-                    className="h-auto w-full"
+                    className="fx-levitate h-auto w-full"
                   />
                 </div>
 
