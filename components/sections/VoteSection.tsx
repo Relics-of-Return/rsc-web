@@ -65,11 +65,6 @@ export function VoteSection() {
           <div className="relative overflow-hidden rounded-sm border-[3px] border-[#3d3121] bg-gradient-to-br from-[#1e1710] via-[#17120c] to-[#120e09] shadow-[inset_0_0_0_1px_#1a140d,0_0_0_1px_#5c4b32,0_6px_16px_rgba(0,0,0,0.7)]">
             <div className="grid grid-cols-1 lg:grid-cols-12">
               <div className="relative flex flex-col justify-center gap-8 p-6 sm:p-8 lg:col-span-7 lg:p-10">
-                <div
-                  className="pointer-events-none absolute -top-20 -left-16 h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(242,202,80,0.08),transparent_70%)]"
-                  aria-hidden="true"
-                />
-
                 <div>
                   <Image
                     src="/brand/mini_logo-icon.png"
@@ -77,7 +72,7 @@ export function VoteSection() {
                     width={64}
                     height={64}
                     unoptimized
-                    className="mb-5 block h-16 w-16 [image-rendering:pixelated] drop-shadow-[0_8px_18px_rgba(0,0,0,0.6)]"
+                    className="mb-5 block h-16 w-16 [image-rendering:pixelated]"
                   />
 
                   <p className="relative flex items-center gap-3 font-label text-[11px] uppercase tracking-[0.26em] text-[#f2ca50]">
@@ -122,14 +117,6 @@ export function VoteSection() {
               </div>
 
               <div className="relative flex flex-col items-center justify-between gap-5 overflow-hidden border-t border-[#3a2d1d] bg-[#0c0906] p-6 sm:p-8 lg:col-span-5 lg:border-t-0 lg:border-l lg:p-10">
-                <div
-                  className="pointer-events-none absolute inset-0"
-                  aria-hidden="true"
-                >
-                  <div className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(242,202,80,0.14),transparent_68%)]" />
-                  <div className="absolute inset-0 bg-[radial-gradient(rgba(242,202,80,0.16)_1px,transparent_1px)] opacity-30 [background-size:18px_18px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_72%)]" />
-                </div>
-
                 <div className="relative w-full max-w-[16rem] sm:max-w-[21rem]">
                   <Image
                     src="/vote/vote_icon.png"
@@ -137,7 +124,7 @@ export function VoteSection() {
                     width={640}
                     height={420}
                     unoptimized
-                    className="h-auto w-full drop-shadow-[0_18px_40px_rgba(0,0,0,0.5)]"
+                    className="h-auto w-full"
                   />
                 </div>
 

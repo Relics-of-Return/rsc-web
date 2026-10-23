@@ -25,7 +25,7 @@ import { Reveal } from '@/components/ui/Reveal'
 
 const KINDS: Record<
   EventKind,
-  { label: string; Icon: typeof Sparkles; text: string; chip: string; bar: string; glow: string }
+  { label: string; Icon: typeof Sparkles; text: string; chip: string; bar: string }
 > = {
   skilling: {
     label: 'Skilling',
@@ -33,7 +33,6 @@ const KINDS: Record<
     text: 'text-[#f2ca50]',
     chip: 'border-[#f2ca50]/40 bg-[#f2ca50]/10 text-[#f2ca50]',
     bar: 'border-[#f2ca50]/70 bg-[#f2ca50]/25 text-[#ffe088]',
-    glow: 'rgba(242,202,80,0.20)',
   },
   combat: {
     label: 'Combat',
@@ -41,7 +40,6 @@ const KINDS: Record<
     text: 'text-rose-300',
     chip: 'border-rose-400/40 bg-rose-500/10 text-rose-300',
     bar: 'border-rose-400/70 bg-rose-500/25 text-rose-200',
-    glow: 'rgba(244,63,94,0.16)',
   },
   community: {
     label: 'Community',
@@ -49,7 +47,6 @@ const KINDS: Record<
     text: 'text-sky-300',
     chip: 'border-sky-400/40 bg-sky-500/10 text-sky-300',
     bar: 'border-sky-400/70 bg-sky-500/25 text-sky-200',
-    glow: 'rgba(56,189,248,0.14)',
   },
   minigame: {
     label: 'Minigame',
@@ -57,7 +54,6 @@ const KINDS: Record<
     text: 'text-emerald-300',
     chip: 'border-emerald-400/40 bg-emerald-500/10 text-emerald-300',
     bar: 'border-emerald-400/70 bg-emerald-500/25 text-emerald-200',
-    glow: 'rgba(52,211,153,0.14)',
   },
 }
 
@@ -131,12 +127,6 @@ function Spotlight({ run, now, mounted }: { run: Occurrence; now: number; mounte
 
   return (
     <article className="banner-frame relative flex h-full flex-col overflow-hidden rounded-sm bg-gradient-to-br from-[#1e1710] to-[#120e09] p-6 sm:p-8">
-      <div
-        className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full blur-2xl"
-        style={{ background: `radial-gradient(circle, ${kind.glow}, transparent 70%)` }}
-        aria-hidden="true"
-      />
-
       <div className="relative flex flex-wrap items-center gap-2">
         <span
           className={cn(

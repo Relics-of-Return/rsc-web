@@ -191,7 +191,6 @@ function StoryCard({ article }: { article: NewsSummaryArticle }) {
     <article className="stone-frame group relative flex flex-col justify-between overflow-hidden rounded-sm bg-[#1b150e] shadow-xl">
       <div>
         <div className="relative h-32 overflow-hidden border-b border-[#342718] bg-[#0e0c08]">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(212,175,55,0.16),transparent_65%)]" />
           <Icon
             className={cn(
               "absolute -bottom-6 -right-4 h-36 w-36 opacity-20 transition-transform duration-500 group-hover:scale-110",
