@@ -4,6 +4,7 @@ import { useEffect, useRef, type CSSProperties } from "react";
 import Link from "next/link";
 import { PlayCircle } from "lucide-react";
 
+import { HeroCountdown } from "@/components/sections/HeroCountdown";
 import { SiteLogo } from "@/components/ui/SiteLogo";
 import { SITE_NAME } from "@/lib/constants";
 
@@ -57,7 +58,7 @@ function useHeroParallax() {
   return { sectionRef, backdropRef, contentRef };
 }
 
-export function HeroSection() {
+export function HeroSection({ serverNow }: { serverNow: number }) {
   const { sectionRef, backdropRef, contentRef } = useHeroParallax();
 
   return (
@@ -88,7 +89,7 @@ export function HeroSection() {
 
       <div
         ref={contentRef}
-        className="relative z-20 mx-auto flex max-w-5xl flex-col items-center px-4 py-20 text-center will-change-transform sm:px-6 lg:px-8 lg:py-24"
+        className="relative z-20 mx-auto flex max-w-5xl flex-col items-center px-4 py-16 text-center will-change-transform sm:px-6 lg:px-8 lg:py-20"
       >
         <h1 className="fx-fade-in-up mb-6 w-full" style={delay(100)}>
           <SiteLogo
@@ -107,9 +108,11 @@ export function HeroSection() {
           The Golden Era of Browser MMORPGs
         </p>
 
+        <HeroCountdown serverNow={serverNow} delayMs={420} />
+
         <div
           className="fx-fade-in-up flex w-full flex-col items-center justify-center gap-4 sm:flex-row"
-          style={delay(550)}
+          style={delay(600)}
         >
           <Link href="/play" className={BUTTON}>
             <PlayCircle

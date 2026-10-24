@@ -34,7 +34,7 @@ export default async function HomePage() {
 
   return (
     <div className={cn(landingFontVariables, "bg-[#0d0b08] font-sans-body")}>
-      <HeroSection />
+      <HeroSection serverNow={serverNow} />
       <RealmEvents serverNow={serverNow} />
       <VoteSection />
 
