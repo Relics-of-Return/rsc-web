@@ -1,13 +1,14 @@
-import type { Metadata } from 'next'
+import type { Metadata } from "next";
 
-import { ReleasePipeline } from '@/components/roadmap/ReleasePipeline'
-import { RoadmapBoard } from '@/components/roadmap/RoadmapBoard'
-import { Container } from '@/components/ui/Container'
+import { ReleasePipeline } from "@/components/roadmap/ReleasePipeline";
+import { RoadmapBoard } from "@/components/roadmap/RoadmapBoard";
+import { Container } from "@/components/ui/Container";
 
 export const metadata: Metadata = {
-  title: 'Roadmap',
-  description: 'What is live, in beta, in development and planned for Relics of Return.',
-}
+  title: "Roadmap",
+  description:
+    "Where every Relics of Return update stands: live on Worlds 1 and 2, in beta on World 3, and in development on World 4.",
+};
 
 export default function RoadmapPage() {
   return (
@@ -28,16 +29,16 @@ export default function RoadmapPage() {
       </div>
 
       <p className="mt-12 text-center text-xs text-text-muted">
-        Want to try things early? Join the beta from your{' '}
+        Want to try things early? Join the beta from your{" "}
         <a href="/account" className="text-gold-400 hover:text-gold-500">
           account page
         </a>
-        , and follow along on the{' '}
+        , and follow along on the{" "}
         <a href="/beta" className="text-gold-400 hover:text-gold-500">
           beta board
         </a>
         .
       </p>
     </Container>
-  )
+  );
 }
