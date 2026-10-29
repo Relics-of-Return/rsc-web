@@ -52,12 +52,11 @@ export const roadmapItems: RoadmapItem[] = [
     title: "Farming",
     stage: "dev",
     area: "gameplay",
-    summary:
-      "Allotment, flower and herb patches.",
+    summary: "Allotment, flower and herb patches.",
     highlights: [
       "25 crops, from potatoes to snape grass, marigolds to white lilies, guam to torstol",
       "Disease, compost and watering, with crops growing while you are logged out",
-      "Tool leprechauns at every site, and Master Farmers to pick for seeds",
+      "Tool leprechauns at every site, and Master Farmers to pickpocket for seeds",
     ],
     remaining: ["Fruit trees, hops and the rest of the patches"],
   },
@@ -70,12 +69,10 @@ export const roadmapItems: RoadmapItem[] = [
       "Buy a house, build its rooms and furnish them, and show your house to other players.",
     highlights: [
       "Estate agent in Varrock to buy a house",
-      "Yanille, Rimmington, and Brimhaven portal.",
+      "Yanille, Rimmington and Brimhaven portals",
       "Basic construction system",
     ],
-    remaining: [
-      "Lots",
-    ],
+    remaining: ["Lots"],
   },
   {
     id: "collection-log",
@@ -83,7 +80,7 @@ export const roadmapItems: RoadmapItem[] = [
     stage: "dev",
     area: "client",
     summary:
-      "Every collectible item you have received, and where it came from, floating over the game without stopping play.",
+      "Every collectible item you have received, and where it came from, shown over the game without stopping play.",
   },
   {
     id: "hiscore-records",
@@ -91,24 +88,21 @@ export const roadmapItems: RoadmapItem[] = [
     stage: "dev",
     area: "community",
     summary:
-      "Two hiscore tabs: who reached 99 and 200 million experience in each skill, and who has found the most of the collection log.",
+      "Two hiscore tabs: who reached 99 and 200 million experience in each skill, and who has completed the most of the collection log.",
   },
   {
     id: "skill-capes",
     title: "Capes of accomplishment",
     stage: "dev",
     area: "gameplay",
-    summary:
-      "Skills, achievement, quest, maxing, completionist.",
+    summary: "Skill, achievement, quest, maxing and completionist capes.",
     image: {
       src: "/roadmap/skill-capes.png",
-      alt: "Skill Capes",
+      alt: "Skill capes",
       width: 250,
       height: 250,
     },
-    remaining: [
-      "Integrating their respective stats, emote, and NPCs.",
-    ],
+    remaining: ["Integrating their respective stats, emotes and NPCs"],
   },
   {
     id: "wiki",
@@ -116,21 +110,21 @@ export const roadmapItems: RoadmapItem[] = [
     stage: "dev",
     area: "community",
     summary:
-      "A data-driven wiki of every item, monster, and shop, directly editable in the browser.",
+      "A data-driven wiki of every item, monster and shop, directly editable in the browser.",
   },
   {
     id: "world-update",
-    title: "World Update",
+    title: "World update",
     stage: "dev",
     area: "client",
     summary:
-      "Reimagining the world map with modernized environments, rebuilt cities, and redesigned regions. The goal is to preserve the spirit of RSC while delivering a world that feels closer to OSRS in scale, detail, and atmosphere.",
+      "A reimagining of the world map with modernised environments, rebuilt cities and redesigned regions. The goal is to preserve the spirit of RSC while delivering a world that feels closer to OSRS in scale, detail and atmosphere.",
   },
 
   // BETA (World 3)
   {
     id: "evil-tree",
-    title: "Global Activity - Evil Tree",
+    title: "Global activity – Evil tree",
     stage: "beta",
     area: "world",
     summary:
@@ -138,41 +132,43 @@ export const roadmapItems: RoadmapItem[] = [
     highlights: [
       "A sprout, a sapling and a young tree, nursed into an evil tree in three minutes",
       "Half an hour to fell it, and up to 25,000 points for chopping and burning",
-      "Four roots that stun whoever works their side for 4 to 6 seconds",
-      "Kindling to light against it, and a face that lunges at whoever stands before it",
-      "A leprechaun’s reward in Woodcutting and Firemaking experience, and noted logs",
+      "Four roots that stun whoever works their side for four to six seconds",
+      "Kindling to set alight against it, and a face that lunges at whoever stands before it",
+      "A leprechaun’s reward of Woodcutting and Firemaking experience and noted logs",
     ],
     remaining: [
       "Two trees a day each, and cutting roots alone counts as one",
-      "Only the normal tree so far: machetes, Farming and the other kinds are not in it",
-      "Its skin is early and will be polished",
+      "Only the normal tree so far: machetes, Farming and other kinds are not in yet",
+      "Its skin is an early one and will be polished",
     ],
   },
   {
     id: "tcg",
-    title: "Trading Card Game (TCG)",
+    title: "Trading card game (TCG)",
     stage: "beta",
     area: "gameplay",
     summary:
       "A 742-card game played while you play, with packs, foils and trading between players.",
     highlights: [
-      "548 item cards and 194 monster cards, each painted from the thing’s own sprite or model",
+      "548 item cards and 194 monster cards, each painted from its own sprite or model",
       "Credits from skilling and kills, and 16 booster packs from 2,000 to 6,800 credits",
-      "Seven rarities, grades S to E, foils and a god pack in every thousand",
+      "Seven rarities, grades S to E, foils and a god pack in every thousand packs",
       "A panel for the collection, the shop and trades of up to 100 cards",
     ],
-    remaining: ["The cards are for fun: they have no value in game or out"],
+    remaining: [
+      "Cards are for fun: they have no value in or out of the game",
+    ],
   },
   {
     id: "bank-rework",
-    title: "Bank Rework",
+    title: "Bank rework",
     stage: "beta",
     area: "client",
     summary:
-      "The bank rebuilt to Old School’s shape: tabs, a scrolling grid, withdraw as notes and placeholders.",
+      "The bank rebuilt to Old School’s shape: tabs, a scrolling grid, withdrawals as notes and placeholders.",
     image: {
       src: "/roadmap/bank-tabs.png",
-      alt: "Bank Tabs",
+      alt: "Bank tabs",
       width: 781,
       height: 489,
     },
@@ -188,16 +184,16 @@ export const roadmapItems: RoadmapItem[] = [
   },
   {
     id: "day-night",
-    title: "Day and Night",
+    title: "Day and night",
     stage: "beta",
     area: "client",
     summary:
       "The world keeps its own clock: a whole day in an hour, a sun that crosses the sky and a moon that keeps its phase.",
     highlights: [
-      "The clock is the world’s, so everyone on a world shares the light",
-      "The sun rising in the south-east and setting in the north-west, the sky reddening toward sunset",
-      "The moon by its phase, the stars, the Milky Way and the odd shooting star",
-      "Night brightness and Stars settings, with Day, Dusk, Night and Classic kept",
+      "The clock is the world’s, so everyone on it shares the light",
+      "The sun rising in the south-east and setting in the north-west, the sky reddening towards sunset",
+      "The moon showing its phase, the stars, the Milky Way and the odd shooting star",
+      "Night brightness and Stars settings, with Day, Dusk, Night and Classic retained",
     ],
     remaining: [
       "The sun and the stars need HD graphics with Enhanced lighting",
@@ -205,13 +201,13 @@ export const roadmapItems: RoadmapItem[] = [
   },
   {
     id: "weather",
-    title: "Dynamic Weather System and Seasons",
+    title: "Dynamic weather system and seasons",
     stage: "beta",
     area: "client",
     summary:
-      "Rain, cloud and storms that everyone shares, with snow, deep snow and ice in Winter.",
+      "Rain, cloud and storms that everyone shares, with snow, deep snow and ice in winter.",
     highlights: [
-      "Clear skies, cloud, rain and storms, or one held with Off, Rain, Storm, Snow or Blizzard",
+      "Clear skies, cloud, rain and storms, or a fixed setting of Off, Rain, Storm, Snow or Blizzard",
       "Blizzard: a gale, a white-out and snow piling three times as fast",
       "Winter snow on fields, roofs and treetops, deep snow and frozen lakes and fountains",
       "A drifting cloud layer whose shadows pass over the ground and reflect in the water",
@@ -223,9 +219,9 @@ export const roadmapItems: RoadmapItem[] = [
     stage: "beta",
     area: "gameplay",
     summary:
-      "One click keeps woodcutting, mining, fishing and thieving going until something ends it.",
+      "One click keeps Woodcutting, Mining, Fishing and Thieving going until something ends it.",
     highlights: [
-      "Each skill keeps its own cadence: three ticks a swing, two for a stall, one for a lock",
+      "Each skill keeps its own cadence: three ticks per swing, two for a stall and one for a lock",
     ],
   },
   {
@@ -234,17 +230,17 @@ export const roadmapItems: RoadmapItem[] = [
     stage: "beta",
     area: "client",
     summary:
-      "custom work animations across multiple skills, making skilling actions feel more immersive and responsive.",
+      "Custom work animations across multiple skills, making skilling actions feel more immersive and responsive.",
     image: {
       src: "/roadmap/mining-animation.gif",
       alt: "Mining animation",
       width: 250,
       height: 250,
     },
-    highlights: ["Woodcutting, Mining, Firemaking, Fishing, and Cooking."],
+    highlights: ["Woodcutting, Mining, Firemaking, Fishing and Cooking"],
     remaining: [
       "Thieving",
-      "Runecrafting",
+      "Runecraft",
       "Hunter",
       "Construction",
       "Fletching",
@@ -253,7 +249,7 @@ export const roadmapItems: RoadmapItem[] = [
       "Herblaw",
       "Crafting",
       "Smithing",
-      "Few Magic Spells, e.g. high alchemy",
+      "A few Magic spells, e.g. High level alchemy",
       "Farming",
       "Slayer",
     ],
@@ -267,7 +263,7 @@ export const roadmapItems: RoadmapItem[] = [
       "A GPU renderer with lit scenery, photo ground, reflections, weather and seasons.",
     image: {
       src: "/roadmap/hd-graphics.png",
-      alt: "HD Graphics",
+      alt: "HD graphics",
       width: 781,
       height: 489,
     },
@@ -289,13 +285,15 @@ export const roadmapItems: RoadmapItem[] = [
     stage: "beta",
     area: "client",
     summary:
-      "The ships’ destinations drawn as a map, with each fare under its name and where you stand.",
+      "Travel destinations on an interactive map, with fares beneath each location and your current position highlighted.",
     highlights: [
-      "Click a destination or press its number, and zoom the map",
-      "The Travel Maps plugin, on by default",
-      "Crandor Isle shows while Dragon Slayer is under way",
+      "Click a destination or use its number key to instantly zoom the map",
+      "Travel Maps is enabled by default",
+      "Crandor Isle appears while Dragon Slayer is in progress",
     ],
-    remaining: ["Switched off, the same menu is the usual list of names"],
+    remaining: [
+      "When disabled, the interface reverts to the traditional destination list",
+    ],
   },
   {
     id: "profile-page",
@@ -303,11 +301,11 @@ export const roadmapItems: RoadmapItem[] = [
     stage: "beta",
     area: "client",
     summary:
-      "A Profile page on the quests tab, after Old School’s character summary, and time played tracked on every world.",
+      "A Profile page on the quests tab, after Old School’s character summary, with time played tracked on every world.",
     highlights: [
       "Combat and total level, total experience, quests, quest points, diary tasks and time played",
       "The quest and diary boxes on it open their pages",
-      "The tab’s stone shows the open page’s icon, the compass for Profile",
+      "The tab’s stone shows the open page’s icon, the compass for the Profile page",
     ],
     remaining: ["Every account starts counting time played from this update"],
   },
@@ -317,12 +315,12 @@ export const roadmapItems: RoadmapItem[] = [
     stage: "beta",
     area: "client",
     summary:
-      "Prayers and spells as grids of Old School’s icons with filters, and XP drops configured RuneLite style.",
+      "Prayers and spells as grids of Old School’s icons with filters, and XP drops configured RuneLite-style.",
     highlights: [
       "Prayers five across, with Old School’s glow and greyed pictures, and a Filters button",
-      "48 spells seven across, with the runes you have against the runes a spell needs",
-      "XP drops in three positions and sizes, an eight-colour palette, counters and a progress bar",
-      "A switch per skill under XP drops for, Construction included",
+      "48 spells, seven across, with the runes you have against the runes a spell needs",
+      "XP drops in three positions and three sizes, an eight-colour palette, counters and a progress bar",
+      "A switch for every skill under XP drops, Construction included",
       "Items in the inventory can be dragged about to rearrange them",
     ],
   },
@@ -351,11 +349,11 @@ export const roadmapItems: RoadmapItem[] = [
     title: "New scenery and interfaces",
     stage: "beta",
     area: "world",
-    summary: "Things the world was missing or needed an update.",
+    summary: "Things the world was missing, or that needed an update.",
     highlights: [
       "Bank booths and deposit boxes",
       "Portraits and poll booths",
-      "Evergreen, Oak, Willow, Maple, Yew, and Magic trees",
+      "Evergreen, oak, willow, maple, yew and magic trees",
       "Welcome screen with the message of the week",
     ],
   },
@@ -364,8 +362,8 @@ export const roadmapItems: RoadmapItem[] = [
     title: "Random events",
     stage: "beta",
     area: "world",
-    summary: "Animated random event npcs that turn up while you train.",
-    highlights: ["Mining, woodcutting, fishing and prayer"],
+    summary: "Animated random-event NPCs that turn up while you train.",
+    highlights: ["Mining, Woodcutting, Fishing and Prayer"],
   },
   {
     id: "ironman",
@@ -385,7 +383,7 @@ export const roadmapItems: RoadmapItem[] = [
     title: "Achievement diaries",
     stage: "beta",
     area: "gameplay",
-    summary: "Four diaries in the style of old school’s, with rewards.",
+    summary: "Four diaries in Old School’s style, with rewards.",
     highlights: ["Shown on the hiscores panel with quest points"],
   },
   {
@@ -415,18 +413,18 @@ export const roadmapItems: RoadmapItem[] = [
     stage: "beta",
     area: "community",
     summary:
-      "Every world’s character in one place, and a first login on any world that makes the character for you.",
+      "Every world’s character in one place, with a first login on any world creating the character for you.",
     highlights: [
       "Overview, Character, Worlds, Security and Linked accounts",
-      "A new password checked as it is typed, and changed on every world",
-      "A player’s first login on Worlds 2, 3 or 4 needs no website login first",
+      "A new password checked as it is typed and applied on every world",
+      "A player’s first login on Worlds 2, 3 or 4 needs no prior website login",
     ],
     remaining: [
-      "A different password for a character the world already has is still refused",
+      "A different password for a character that a world already has is still refused",
     ],
   },
 
-  // LIVE (World 1 & 2)
+  // LIVE (Worlds 1 & 2)
   {
     id: "tradepost",
     title: "Tradepost",
@@ -450,7 +448,7 @@ export const roadmapItems: RoadmapItem[] = [
       "Eleven slots with bonuses and an ammo slot, keeping RSC’s equip rules.",
     image: {
       src: "/roadmap/worn-equipment-tab.png",
-      alt: "Worn Equipment",
+      alt: "Worn equipment",
       width: 781,
       height: 489,
     },
@@ -460,7 +458,7 @@ export const roadmapItems: RoadmapItem[] = [
     title: "Client interface rework",
     stage: "live",
     area: "client",
-    summary: "Fixed, resizable, and classic layouts.",
+    summary: "Fixed, resizable and classic layouts.",
   },
   {
     id: "launcher",
@@ -480,11 +478,11 @@ export const roadmapItems: RoadmapItem[] = [
   },
   {
     id: "black-hole",
-    title: "Black Hole (Player Punishment System)",
+    title: "Black Hole (player punishment system)",
     stage: "live",
     area: "world",
     summary:
-      "The historic realm for mischievous players, accessible through the Disc of Returning.",
+      "The historic realm for mischievous players, accessible through the Disk of Returning.",
   },
   {
     id: "hiscores",
@@ -508,7 +506,7 @@ export const roadmapItems: RoadmapItem[] = [
     title: "Skill cape emotes",
     stage: "planned",
     area: "gameplay",
-    summary: "Animation that plays while wearing a cape of accomplishment.",
+    summary: "An animation that plays while wearing a cape of accomplishment.",
   },
   {
     id: "clans",
@@ -516,7 +514,7 @@ export const roadmapItems: RoadmapItem[] = [
     stage: "planned",
     area: "community",
     summary:
-      "A clan is an organised group of players who participate together in group activities such as player killing, training skills, boss killing, minigames, or simply existing as a community of friends. Clans in Old School RuneScape have access to a number of clan-specific features, described below.",
+      "A clan is an organised group of players who participate together in group activities such as player killing, training skills, boss killing, minigames or simply existing as a community of friends. Clans in Old School RuneScape have access to a number of clan-specific features.",
   },
   {
     id: "hc-ironman",
@@ -531,7 +529,7 @@ export const roadmapItems: RoadmapItem[] = [
     stage: "planned",
     area: "gameplay",
     summary:
-      "Equip pickaxes and woodcutting axes in the weapon slot to save backpack space while gathering.",
+      "Equip pickaxes and woodcutting axes in the weapon slot to save inventory space while gathering.",
   },
   {
     id: "polling",
@@ -555,7 +553,7 @@ export const roadmapItems: RoadmapItem[] = [
     stage: "planned",
     area: "client",
     summary:
-      "Localization framework supporting multiple languages across menus, dialogues, and interface text.",
+      "Localisation framework supporting multiple languages across menus, dialogues and interface text.",
   },
   {
     id: "agility-shortcuts",
@@ -563,7 +561,7 @@ export const roadmapItems: RoadmapItem[] = [
     stage: "planned",
     area: "world",
     summary:
-      "New 3D interactive obstacle models, fence vaults, and map shortcuts across RuneScape.",
+      "New 3D interactive obstacle models, fence vaults and map shortcuts across RuneScape.",
   },
   {
     id: "seasonal-events",
@@ -571,7 +569,7 @@ export const roadmapItems: RoadmapItem[] = [
     stage: "planned",
     area: "world",
     summary:
-      "Seasonal holiday events, festive world transformations, and unique event items for Halloween, Christmas, and Easter.",
+      "Seasonal holiday events, festive world transformations and unique event items for Halloween, Christmas and Easter.",
   },
   {
     id: "runecraft",
@@ -587,7 +585,7 @@ export const roadmapItems: RoadmapItem[] = [
     stage: "planned",
     area: "gameplay",
     summary:
-      "Assignments from Slayer Masters to hunt unique monsters, unlock new slayer gear and dungeons.",
+      "Assignments from Slayer Masters to hunt unique monsters and unlock new Slayer gear and dungeons.",
   },
   {
     id: "hunter",
