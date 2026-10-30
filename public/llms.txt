@@ -1,0 +1,31 @@
+# Relics of Return
+
+> A RuneScape Classic private server — browser play, live hiscores and a community worth joining.
+
+Relics of Return is an open-source RuneScape Classic (RSC) private server and emulation platform. It delivers an authentic 2003 retro MMORPG experience paired with modern web technologies, seamless browser-based play, cross-platform desktop clients, real-time hiscores, an in-game trade post, and continuous quality-of-life improvements.
+
+## Play & Client Downloads
+- [Play in Browser](https://www.relicsofreturn.com/play): Instant in-browser game client powered by WebGL/Canvas, requiring no download or local installation.
+- [Download Desktop Launcher](https://www.relicsofreturn.com/download): Cross-platform standalone desktop launcher for Windows, macOS, and Linux with auto-updates and enhanced performance.
+
+## World & Community Features
+- [Live Hiscores](https://www.relicsofreturn.com/hiscores): Real-time leaderboards tracking overall levels, experience, and individual skill rankings (Attack, Defense, Strength, Hits, Ranged, Prayer, Magic, Cooking, Woodcutting, Fletching, Fishing, Firemaking, Crafting, Smithing, Mining, Herblaw, Agility, Thieving).
+- [Player Trade Post](https://www.relicsofreturn.com/tradepost): Live marketplace and search engine for player-to-player trading and item listings.
+- [World Map](https://www.relicsofreturn.com/map): Interactive 2D map of Gielinor with landmarks, dungeons, wilderness areas, and point-of-interest markers.
+- [Development Roadmap](https://www.relicsofreturn.com/roadmap): Project milestones, completed features, active developments, and planned expansions.
+- [News & Updates](https://www.relicsofreturn.com/news): Official patch notes, community announcements, and release write-ups.
+- [Server Status](https://www.relicsofreturn.com/status): Real-time world availability, uptime statistics, and concurrent player counts.
+
+## Community & Resources
+- [Wiki](https://wiki.relicsofreturn.com): Comprehensive game guides, item databases, quest walkthroughs, bestiary, and skill mechanics.
+- [Discord](https://discord.gg/DtZMaHHfyC): Official community discussion, support, clans, and real-time announcements.
+- [GitHub](https://github.com/Relics-of-Return): Open-source codebases for the game server, client, and web applications.
+- [Server List](https://rscserverlist.com): Community directory and [Vote Page](https://rscserverlist.com/vote/6ada2607fcdf84bab73e630e).
+
+## Public APIs for AI Agents & Tools
+- https://www.relicsofreturn.com/api/status: Real-time JSON health check reporting online status and player counts.
+- https://www.relicsofreturn.com/api/worlds: Metadata and connection configurations for active worlds.
+- https://www.relicsofreturn.com/api/ticker: Live game news ticker and announcements.
+- https://www.relicsofreturn.com/api/hiscores: Read-only REST hiscores endpoints for player lookups and skill standings.
+- https://www.relicsofreturn.com/api/tradepost: Read-only endpoints for current market listings.
+
