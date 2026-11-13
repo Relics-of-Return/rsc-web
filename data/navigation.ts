@@ -1,4 +1,4 @@
-export const menuItems = ['Home', 'Hiscores', 'Tradepost', 'Map', 'Roadmap', 'News', 'Wiki', 'Play']
+export const menuItems = ['Home', 'Hiscores', 'Tradepost', 'Map', 'Roadmap', 'News', 'Polls', 'Wiki', 'Play']
 
 export const utilityLinks = [
   { label: 'GitHub', href: 'https://github.com/Relics-of-Return', external: true },
@@ -23,6 +23,7 @@ export const footerColumns = [
       { label: 'Tradepost', href: '/tradepost' },
       { label: 'Wiki', href: '/wiki' },
       { label: 'Roadmap', href: '/roadmap' },
+      { label: 'Polls', href: '/polls' },
       { label: 'Beta Testing', href: '/beta' },
       { label: 'GitHub Source', href: 'https://github.com/Relics-of-Return' },
     ],

@@ -14,6 +14,7 @@ const PUBLIC_ROUTES: RouteConfig[] = [
   { path: '/download', changeFrequency: 'weekly', priority: 0.9 },
   { path: '/news', changeFrequency: 'daily', priority: 0.8 },
   { path: '/roadmap', changeFrequency: 'weekly', priority: 0.8 },
+  { path: '/polls', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/hiscores', changeFrequency: 'hourly', priority: 0.8 },
   { path: '/tradepost', changeFrequency: 'hourly', priority: 0.8 },
   { path: '/status', changeFrequency: 'hourly', priority: 0.7 },

@@ -8,6 +8,7 @@ import { BetaTesters } from '@/components/admin/BetaTesters'
 import { CommandLog } from '@/components/admin/CommandLog'
 import { GuideManagement } from '@/components/admin/GuideManagement'
 import { NewsManagement } from '@/components/admin/NewsManagement'
+import { PollManagement } from '@/components/admin/PollManagement'
 import { SiteSettings } from '@/components/admin/SiteSettings'
 import { Button } from '@/components/ui/Button'
 import { Container } from '@/components/ui/Container'
@@ -19,7 +20,7 @@ import { formatUsername } from '@/lib/utils'
 export default function AdminPage() {
   const { user, rank, loading } = useAuth()
   const [activeTab, setActiveTab] = useState<
-    'reports' | 'beta' | 'logs' | 'news' | 'guides' | 'settings'
+    'reports' | 'beta' | 'logs' | 'news' | 'polls' | 'guides' | 'settings'
   >('reports')
 
   if (loading) {
@@ -123,6 +124,16 @@ export default function AdminPage() {
                 <button
                   type="button"
                   role="tab"
+                  aria-selected={activeTab === 'polls'}
+                  aria-controls="admin-panel-polls"
+                  onClick={() => setActiveTab('polls')}
+                  className={tabClass(activeTab === 'polls')}
+                >
+                  Polls
+                </button>
+                <button
+                  type="button"
+                  role="tab"
                   aria-selected={activeTab === 'guides'}
                   aria-controls="admin-panel-guides"
                   onClick={() => setActiveTab('guides')}
@@ -164,6 +175,11 @@ export default function AdminPage() {
           {activeTab === 'news' && isAdministrator(rank) && (
             <div id="admin-panel-news" role="tabpanel" aria-label="News Management">
               <NewsManagement />
+            </div>
+          )}
+          {activeTab === 'polls' && isAdministrator(rank) && (
+            <div id="admin-panel-polls" role="tabpanel" aria-label="Polls">
+              <PollManagement />
             </div>
           )}
           {activeTab === 'guides' && isAdministrator(rank) && (
