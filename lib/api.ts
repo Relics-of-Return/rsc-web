@@ -111,7 +111,11 @@ export class ApiError extends Error {
   }
 }
 
-async function adminJSON<T>(path: string, body?: unknown): Promise<T> {
+/**
+ * A GET, or a POST when there is a body, to one of the site's own routes. A
+ * refusal throws an ApiError with rsc-www's `error` text as its message.
+ */
+export async function apiJSON<T>(path: string, body?: unknown): Promise<T> {
   const res = await fetch(
     path,
     body === undefined
@@ -122,12 +126,13 @@ async function adminJSON<T>(path: string, body?: unknown): Promise<T> {
           body: JSON.stringify(body),
         },
   )
+  const data = await res.json().catch(() => null)
 
   if (!res.ok) {
-    throw new ApiError(res.status, `request failed (${res.status})`)
+    throw new ApiError(res.status, (data && typeof data.error === 'string' && data.error) || `request failed (${res.status})`)
   }
 
-  return res.json() as Promise<T>
+  return data as T
 }
 
 export async function getAbuseReports(
@@ -140,7 +145,7 @@ export async function getAbuseReports(
   if (options.accused) params.set('accused', options.accused)
   if (options.page) params.set('page', String(options.page))
 
-  return adminJSON<AbuseReportsData>(`/api/admin/reports?${params}`)
+  return apiJSON<AbuseReportsData>(`/api/admin/reports?${params}`)
 }
 
 /** Marks an abuse report as dealt with, or reopens it. */
@@ -148,7 +153,7 @@ export async function resolveAbuseReport(
   id: number,
   handled = true,
 ): Promise<ResolveReportResult> {
-  return adminJSON<ResolveReportResult>('/api/admin/reports/resolve', {
+  return apiJSON<ResolveReportResult>('/api/admin/reports/resolve', {
     id,
     handled,
   })
@@ -156,7 +161,7 @@ export async function resolveAbuseReport(
 
 /** The full case file for one report: snapshot, account facts and history. */
 export async function getAbuseReportDetail(id: number): Promise<AbuseReportDetail> {
-  return adminJSON<AbuseReportDetail>(`/api/admin/reports/detail?id=${id}`)
+  return apiJSON<AbuseReportDetail>(`/api/admin/reports/detail?id=${id}`)
 }
 
 /**
@@ -165,15 +170,15 @@ export async function getAbuseReportDetail(id: number): Promise<AbuseReportDetai
  * 403 for anyone below an administrator.
  */
 export async function saveSiteSettings(changes: Partial<SiteSettings>): Promise<SiteSettings> {
-  return adminJSON<SiteSettings>('/api/admin/settings', changes)
+  return apiJSON<SiteSettings>('/api/admin/settings', changes)
 }
 
 export async function getAdminNews(page = 0): Promise<AdminNewsData> {
-  return adminJSON<AdminNewsData>(`/api/admin/news?page=${page}`)
+  return apiJSON<AdminNewsData>(`/api/admin/news?page=${page}`)
 }
 
 export async function getAdminNewsArticle(id: number): Promise<AdminNewsArticleData> {
-  return adminJSON<AdminNewsArticleData>(`/api/admin/news?id=${id}`)
+  return apiJSON<AdminNewsArticleData>(`/api/admin/news?id=${id}`)
 }
 
 export async function createNewsArticle(article: {
@@ -182,7 +187,7 @@ export async function createNewsArticle(article: {
   date: number
   body: string
 }): Promise<{ success: boolean }> {
-  return adminJSON<{ success: boolean }>('/api/admin/news', {
+  return apiJSON<{ success: boolean }>('/api/admin/news', {
     action: 'create',
     ...article,
   })
@@ -195,14 +200,14 @@ export async function updateNewsArticle(article: {
   date: number
   body: string
 }): Promise<{ success: boolean }> {
-  return adminJSON<{ success: boolean }>('/api/admin/news', {
+  return apiJSON<{ success: boolean }>('/api/admin/news', {
     action: 'update',
     ...article,
   })
 }
 
 export async function deleteNewsArticle(id: number): Promise<{ success: boolean }> {
-  return adminJSON<{ success: boolean }>('/api/admin/news', {
+  return apiJSON<{ success: boolean }>('/api/admin/news', {
     action: 'delete',
     id,
   })
@@ -221,23 +226,23 @@ export async function uploadNewsImage(file: File): Promise<{ success: boolean; u
 
   const extension = file.name.split('.').pop()?.toLowerCase() || ''
 
-  return adminJSON<{ success: boolean; url: string }>('/api/admin/news/image', {
+  return apiJSON<{ success: boolean; url: string }>('/api/admin/news/image', {
     extension,
     data,
   })
 }
 
 export async function getAdminGuides(): Promise<AdminGuidesData> {
-  return adminJSON<AdminGuidesData>('/api/admin/guides')
+  return apiJSON<AdminGuidesData>('/api/admin/guides')
 }
 
 export async function getAdminGuide(id: number): Promise<AdminGuideData> {
-  return adminJSON<AdminGuideData>(`/api/admin/guides?id=${id}`)
+  return apiJSON<AdminGuideData>(`/api/admin/guides?id=${id}`)
 }
 
 /** The last 50 snapshots of one guide, newest first. */
 export async function getGuideRevisions(guideId: number): Promise<GuideRevisionsData> {
-  return adminJSON<GuideRevisionsData>(`/api/admin/guides?revisions=${guideId}`)
+  return apiJSON<GuideRevisionsData>(`/api/admin/guides?revisions=${guideId}`)
 }
 
 export async function createGuideArticle(guide: {
@@ -247,7 +252,7 @@ export async function createGuideArticle(guide: {
   category: string
   body: string
 }): Promise<{ success: boolean; id?: number }> {
-  return adminJSON<{ success: boolean; id?: number }>('/api/admin/guides', {
+  return apiJSON<{ success: boolean; id?: number }>('/api/admin/guides', {
     action: 'create',
     ...guide,
   })
@@ -261,14 +266,14 @@ export async function updateGuideArticle(guide: {
   category: string
   body: string
 }): Promise<{ success: boolean; id?: number }> {
-  return adminJSON<{ success: boolean; id?: number }>('/api/admin/guides', {
+  return apiJSON<{ success: boolean; id?: number }>('/api/admin/guides', {
     action: 'update',
     ...guide,
   })
 }
 
 export async function deleteGuideArticle(id: number): Promise<{ success: boolean }> {
-  return adminJSON<{ success: boolean }>('/api/admin/guides', {
+  return apiJSON<{ success: boolean }>('/api/admin/guides', {
     action: 'delete',
     id,
   })
@@ -277,7 +282,7 @@ export async function deleteGuideArticle(id: number): Promise<{ success: boolean
 export async function restoreGuideRevision(
   revisionId: number,
 ): Promise<{ success: boolean; id?: number }> {
-  return adminJSON<{ success: boolean; id?: number }>('/api/admin/guides', {
+  return apiJSON<{ success: boolean; id?: number }>('/api/admin/guides', {
     action: 'restore',
     revisionId,
   })
@@ -296,7 +301,7 @@ export async function uploadGuideImage(file: File): Promise<{ success: boolean; 
 
   const extension = file.name.split('.').pop()?.toLowerCase() || ''
 
-  return adminJSON<{ success: boolean; url: string }>('/api/admin/guides/image', {
+  return apiJSON<{ success: boolean; url: string }>('/api/admin/guides/image', {
     extension,
     data,
   })
@@ -339,32 +344,12 @@ export async function getStaffLogs(
   }
 
   const query = params.toString()
-  return adminJSON<StaffLogsData>(`/api/admin/logs${query ? `?${query}` : ''}`)
-}
-
-async function betaJSON<T>(path: string, body?: unknown): Promise<T> {
-  const res = await fetch(
-    path,
-    body === undefined
-      ? { cache: 'no-store' }
-      : {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(body),
-        },
-  )
-  const data = await res.json().catch(() => null)
-
-  if (!res.ok) {
-    throw new ApiError(res.status, (data && data.error) || `request failed (${res.status})`)
-  }
-
-  return data as T
+  return apiJSON<StaffLogsData>(`/api/admin/logs${query ? `?${query}` : ''}`)
 }
 
 /** The logged-in player's account page: their account and character on every world. */
 export async function getAccountPage(): Promise<AccountPageData> {
-  return betaJSON<AccountPageData>('/api/account')
+  return apiJSON<AccountPageData>('/api/account')
 }
 
 /**
@@ -373,20 +358,20 @@ export async function getAccountPage(): Promise<AccountPageData> {
  * contains-username, same-password or unavailable.
  */
 export async function changeAccountPassword(change: { password: string; newPassword: string; confirm: string }): Promise<PasswordChangeResult> {
-  return betaJSON<PasswordChangeResult>('/api/account/password', change)
+  return apiJSON<PasswordChangeResult>('/api/account/password', change)
 }
 
 /** Staff: every account linked to Discord, and whether it holds the Beta Tester role. */
 export async function getBetaTesters(): Promise<BetaTestersData> {
-  return betaJSON<BetaTestersData>('/api/admin/beta-testers')
+  return apiJSON<BetaTestersData>('/api/admin/beta-testers')
 }
 
 /** The logged-in player's Discord link and beta access (the invite-only beta). */
 export async function getBetaAccess(): Promise<BetaAccess> {
-  return betaJSON<BetaAccess>('/api/discord')
+  return apiJSON<BetaAccess>('/api/discord')
 }
 
 /** Removes the logged-in player's Discord link, and with it their beta access. */
 export async function unlinkDiscord(): Promise<BetaAccess> {
-  return betaJSON<BetaAccess>('/api/discord/unlink', {})
+  return apiJSON<BetaAccess>('/api/discord/unlink', {})
 }

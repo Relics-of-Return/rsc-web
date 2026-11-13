@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-import { getWwwApiUrl } from '@/lib/www'
+import { wwwFetch } from '@/lib/www'
 
 // Where Discord sends the player back after its consent page (the redirect
 // registered with the Discord application). rsc-www checks the state against
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
   const cookie = request.headers.get('cookie') ?? ''
 
   try {
-    const res = await fetch(`${getWwwApiUrl()}/api/discord/callback`, {
+    const res = await wwwFetch(`/api/discord/callback`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
       body: JSON.stringify({ code, state }),

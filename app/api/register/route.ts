@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-import { getWwwApiUrl, visitorHeaders } from '@/lib/www'
+import { visitorHeaders, wwwFetch } from '@/lib/www'
 
 // BFF: proxy rsc-www's POST /api/register. Body: { username, password, confirm }.
 // Response: { success, code } — codes map to friendly messages client-side.
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const res = await fetch(`${getWwwApiUrl()}/api/register`, {
+    const res = await wwwFetch(`/api/register`, {
       method: 'POST',
       // who the visitor is, for rsc-www's per-IP registration limit
       headers: { 'content-type': 'application/json', ...visitorHeaders(request) },

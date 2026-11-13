@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-import { getWwwApiUrl, visitorHeaders } from '@/lib/www'
+import { visitorHeaders, wwwFetch } from '@/lib/www'
 
 // BFF: proxy rsc-www's POST /api/login. Body: { username, password }.
 // On success rsc-www sets a `rsc-www-session` cookie; it is forwarded to the
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const res = await fetch(`${getWwwApiUrl()}/api/login`, {
+    const res = await wwwFetch(`/api/login`, {
       method: 'POST',
       // who the visitor is, for rsc-www's per-IP login lockout
       headers: { 'content-type': 'application/json', ...visitorHeaders(request) },

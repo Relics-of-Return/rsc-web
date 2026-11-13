@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-import { getWwwApiUrl } from '@/lib/www'
+import { wwwFetch } from '@/lib/www'
 
 // Serves a wiki article's uploaded image. The bytes live in rsc-www's uploads
 // table; this passes them through for the editor's preview and any page on
@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const res = await fetch(
-      `${getWwwApiUrl()}/api/guides/image?name=${encodeURIComponent(name)}`,
+    const res = await wwwFetch(
+      `/api/guides/image?name=${encodeURIComponent(name)}`,
       { cache: 'no-store' },
     )
 

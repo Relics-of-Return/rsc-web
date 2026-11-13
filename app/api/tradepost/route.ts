@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { getItem, itemIconPath } from '@/lib/items'
 import { parseWorld } from '@/lib/tradepost'
 import type { TradepostMarketData } from '@/lib/types'
-import { getWwwApiUrl } from '@/lib/www'
+import { wwwFetch } from '@/lib/www'
 
 // BFF: the tradepost's market from rsc-www's /api/tradepost, with each item's
 // name and picture added, so anything outside the site (a Discord bot, say)
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   const world = parseWorld(request.nextUrl.searchParams.get('world') ?? undefined)
 
   try {
-    const res = await fetch(`${getWwwApiUrl()}/api/tradepost?world=${world}`, {
+    const res = await wwwFetch(`/api/tradepost?world=${world}`, {
       cache: 'no-store',
     })
 

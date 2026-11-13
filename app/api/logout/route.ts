@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-import { getWwwApiUrl } from '@/lib/www'
+import { wwwFetch } from '@/lib/www'
 
 // BFF: proxy rsc-www's POST /api/logout. The browser's session cookie is
 // forwarded so rsc-www can delete the session server-side; the clearing
@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   const cookie = request.headers.get('cookie') ?? ''
 
   try {
-    const res = await fetch(`${getWwwApiUrl()}/api/logout`, {
+    const res = await wwwFetch(`/api/logout`, {
       method: 'POST',
       headers: cookie ? { cookie } : undefined,
       cache: 'no-store',

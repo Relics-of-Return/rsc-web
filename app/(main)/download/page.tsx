@@ -50,7 +50,7 @@ async function windowsInstaller() {
     let size = '—'
 
     try {
-      const head = await fetch(url, { method: 'HEAD', next: { revalidate: 300 } })
+      const head = await fetch(url, { method: 'HEAD', next: { revalidate: 300 }, signal: AbortSignal.timeout(5000) })
       const bytes = Number(head.headers.get('content-length'))
 
       if (bytes > 0) {
@@ -261,7 +261,7 @@ export default async function DownloadSection() {
             </div>
             <div>
               <h4 className="font-adventure text-lg font-bold text-[#f5ebd9] mb-0.5">
-                Don't want to install anything?
+                Don’t want to install anything?
               </h4>
               <p className="text-xs text-[#d0c5af]">
                 Launch Relics of Return right in your WebGL browser client. No plugins or Java setup needed.

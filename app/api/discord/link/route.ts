@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-import { getWwwApiUrl } from '@/lib/www'
+import { wwwFetch } from '@/lib/www'
 
 // "Link Discord" on the account page: rsc-www makes Discord's consent page
 // address for the logged-in player (with a state only their session can
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     NextResponse.redirect(new URL(`/account?discord=${reason}`, request.url))
 
   try {
-    const res = await fetch(`${getWwwApiUrl()}/api/discord/link`, {
+    const res = await wwwFetch(`/api/discord/link`, {
       headers: cookie ? { cookie } : undefined,
       cache: 'no-store',
     })

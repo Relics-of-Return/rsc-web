@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-import { getWwwApiUrl } from '@/lib/www'
+import { wwwFetch } from '@/lib/www'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const response = await fetch(
-      `${getWwwApiUrl()}/api/news/image?name=${encodeURIComponent(name)}`,
+    const response = await wwwFetch(
+      `/api/news/image?name=${encodeURIComponent(name)}`,
       { cache: 'no-store' },
     )
 

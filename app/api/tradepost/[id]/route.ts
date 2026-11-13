@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { getItem, itemIconPath } from '@/lib/items'
 import { parseWorld } from '@/lib/tradepost'
 import type { TradepostItemData } from '@/lib/types'
-import { getWwwApiUrl } from '@/lib/www'
+import { wwwFetch } from '@/lib/www'
 
 // BFF: one item's order book, recent trades, trends and price history from
 // rsc-www's /api/tradepost/item, with its name, description and picture
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const world = parseWorld(request.nextUrl.searchParams.get('world') ?? undefined)
 
   try {
-    const res = await fetch(`${getWwwApiUrl()}/api/tradepost/item?id=${item.id}&world=${world}`, {
+    const res = await wwwFetch(`/api/tradepost/item?id=${item.id}&world=${world}`, {
       cache: 'no-store',
     })
 

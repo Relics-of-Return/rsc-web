@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-import { getWwwApiUrl, visitorHeaders } from '@/lib/www'
+import { visitorHeaders, wwwFetch } from '@/lib/www'
 
 // BFF: proxy rsc-www's POST /api/account/password. The session cookie says
 // whose password it is, and the visitor's address goes along for the same
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   const cookie = request.headers.get('cookie') ?? ''
 
   try {
-    const res = await fetch(`${getWwwApiUrl()}/api/account/password`, {
+    const res = await wwwFetch(`/api/account/password`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}), ...visitorHeaders(request) },
       body: JSON.stringify(body),
