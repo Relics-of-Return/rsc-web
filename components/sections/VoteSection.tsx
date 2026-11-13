@@ -1,8 +1,10 @@
 import Image from "next/image";
-import { ArrowUpRight, ExternalLink, Gift, Trophy, Vote } from "lucide-react";
+import { ArrowUpRight, Gift, Trophy, Vote } from "lucide-react";
 
 import { Reveal } from "@/components/ui/Reveal";
-import { SERVER_LIST_URL, SERVER_LIST_VOTE_URL } from "@/lib/constants";
+import { SERVER_LIST_URL } from "@/lib/constants";
+
+import { VoteButton } from "./VoteButton";
 
 const VOTE_BUTTON =
   "fx-shimmer group relative inline-flex w-full items-center justify-center gap-2.5 rounded-sm border border-[#ffe9a8]/60 bg-gradient-to-b from-[#ffe088] via-[#f2ca50] to-[#b38e22] px-6 py-3.5 font-adventure text-base font-bold uppercase tracking-wider text-[#241a00] shadow-[0_0_22px_rgba(242,202,80,0.35),inset_0_1px_0_rgba(255,255,255,0.5)] transition-[transform,box-shadow,filter] duration-200 motion-safe:hover:-translate-y-0.5 hover:shadow-[0_0_34px_rgba(242,202,80,0.6),inset_0_1px_0_rgba(255,255,255,0.5)] active:translate-y-0 active:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0c0906]";
@@ -20,8 +22,8 @@ const PERKS = [
   },
   {
     Icon: Gift,
-    title: "In-game rewards for voters",
-    copy: "Vote for Relics of Return in the RSC Server List and earn rewards.",
+    title: "250,000 coins a vote",
+    copy: "Plus a vote token, once every 24 hours. Type ::claim in game to collect.",
   },
 ];
 
@@ -138,26 +140,7 @@ export function VoteSection() {
                 </div>
 
                 <div className="relative w-full max-w-xs">
-                  <a
-                    href={SERVER_LIST_VOTE_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={VOTE_BUTTON}
-                  >
-                    <Vote
-                      className="h-5 w-5 transition-transform duration-300 motion-safe:group-hover:-rotate-6"
-                      aria-hidden="true"
-                    />
-                    Cast your vote
-                    <ExternalLink
-                      className="h-4 w-4 opacity-70"
-                      aria-hidden="true"
-                    />
-                    <span className="sr-only">
-                      {" "}
-                      on the RSC Server List (opens in a new tab)
-                    </span>
-                  </a>
+                  <VoteButton className={VOTE_BUTTON} />
                 </div>
               </div>
             </div>
