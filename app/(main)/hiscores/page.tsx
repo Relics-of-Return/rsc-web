@@ -1,89 +1,242 @@
-import Link from 'next/link'
+import Link from "next/link";
 
-import { PlayerAvatar } from '@/components/players/Avatar'
-import { Crown } from '@/components/players/Crown'
-import { DiaryCard } from '@/components/players/DiaryCard'
-import { IronBadge } from '@/components/players/IronBadge'
-import { Pagination } from '@/components/shared/Pagination'
-import { SkillIcon } from '@/components/skills/SkillIcon'
-import { Container } from '@/components/ui/Container'
-import { SectionTitle } from '@/components/ui/SectionTitle'
-import { HISCORE_SKILLS, experienceForLevel, skillLabel } from '@/data/skills'
-import type { HiscoresData, PlayerRank, PlayerRanksData } from '@/lib/types'
-import { cn, formatNumber, formatUsername } from '@/lib/utils'
-import { fetchWwwJson } from '@/lib/www'
+import { CollectionLogCard } from "@/components/hiscores/CollectionLogCard";
+import { VotesCard } from "@/components/hiscores/VotesCard";
+import { HiscoreCollection } from "@/components/hiscores/HiscoreCollection";
+import {
+  HiscoreRecords,
+  type RecordsLink,
+  type RecordsProblem,
+} from "@/components/hiscores/HiscoreRecords";
+import { HiscoresIcons } from "@/components/hiscores/HiscoresIcons";
+import { PlayerAvatar } from "@/components/players/Avatar";
+import { Crown } from "@/components/players/Crown";
+import { DiaryCard } from "@/components/players/DiaryCard";
+import { GameModeBadges } from "@/components/players/GameModeBadges";
+import { IronBadge } from "@/components/players/IronBadge";
+import { Pagination } from "@/components/shared/Pagination";
+import { SkillIcon } from "@/components/skills/SkillIcon";
+import { WorldSwitch } from "@/components/tradepost/WorldSwitch";
+import { Container } from "@/components/ui/Container";
+import { SectionTitle } from "@/components/ui/SectionTitle";
+import { hiscoreModeOf, type HiscoreModeId } from "@/data/game-modes";
+import { HISCORE_SKILLS, experienceForLevel, skillLabel } from "@/data/skills";
+import { parseWorld } from "@/lib/tradepost";
+import type {
+  HiscoreCollectionData,
+  HiscoreMilestone,
+  HiscoreRecordsData,
+  HiscoresData,
+  PlayerRank,
+  PlayerRanksData,
+  WorldEntry,
+  WorldsData,
+} from "@/lib/types";
+import { cn, formatNumber, formatShortDate, formatUsername } from "@/lib/utils";
+import { WwwError, fetchWwwJson, pageHiscoreHeaders } from "@/lib/www";
 
-const RANKS_PER_PAGE = 16
+export const dynamic = "force-dynamic";
+
+const RANKS_PER_PAGE = 16;
+
+type Tab = "skills" | "records" | "collection";
 
 interface HiscoresPageProps {
-  searchParams: Promise<{ skill?: string; page?: string; username?: string; mode?: string }>
+  searchParams: Promise<{
+    skill?: string;
+    page?: string;
+    username?: string;
+    mode?: string;
+    world?: string;
+    tab?: string;
+    milestone?: string;
+  }>;
 }
 
-const MODES = [
-  { id: 'all', label: 'Everyone' },
-  { id: 'ironman', label: 'Ironman' },
-] as const
+const MODES: { id: HiscoreModeId; label: string; tier?: number }[] = [
+  { id: "normal", label: "Normal", tier: 0 },
+  { id: "hard", label: "Hard", tier: 1 },
+  { id: "extreme", label: "Extreme", tier: 2 },
+  { id: "realism", label: "Realism", tier: 3 },
+  { id: "ironman", label: "Ironman" },
+];
+
+const modeLabel = (id: HiscoreModeId) =>
+  MODES.find((m) => m.id === id)?.label ?? "";
+
+const TABS = [
+  { id: "skills", label: "Skills" },
+  { id: "records", label: "Records" },
+  { id: "collection", label: "Collection log" },
+] as const;
+
+const RECORD_SKILLS = HISCORE_SKILLS.filter((skill) => skill !== "overall");
+
+interface HiscoresLink extends RecordsLink {
+  tab?: Tab;
+  mode?: string;
+  world?: number;
+}
 
 export async function generateMetadata({ searchParams }: HiscoresPageProps) {
-  const { skill, username, mode } = await searchParams
+  const { skill, username, mode, tab } = await searchParams;
 
   if (username) {
-    return { title: `${formatUsername(username)} - Hiscores` }
+    return { title: `${formatUsername(username)} - Hiscores` };
   }
 
-  const who = mode === 'ironman' ? 'Ironman ' : ''
+  if (tab === "records") {
+    return { title: "Hiscore Records" };
+  }
 
-  return { title: `${who}${skillLabel(skill ?? 'overall')} Hiscores` }
+  if (tab === "collection") {
+    return { title: "Collection Log Hiscores" };
+  }
+
+  return {
+    title: `${modeLabel(hiscoreModeOf(mode))} ${skillLabel(skill ?? "overall")} Hiscores`,
+  };
 }
 
-export default async function HiscoresPage({ searchParams }: HiscoresPageProps) {
-  const { skill: rawSkill, page: rawPage, username, mode: rawMode } = await searchParams
-
-  const skill = rawSkill ?? 'overall'
-  const page = Number.parseInt(rawPage ?? '0', 10) || 0
-  const mode = rawMode === 'ironman' ? 'ironman' : 'all'
-  const skills = HISCORE_SKILLS
-
-  const buildHref = (params: { skill?: string; page?: number; username?: string; mode?: string }) => {
-    const sp = new URLSearchParams()
-    const m = params.mode ?? mode
-    if (m !== 'all' && !params.username) sp.set('mode', m)
-    const s = params.skill ?? skill
-    if (s !== 'overall') sp.set('skill', s)
-    const p = params.page ?? page
-    if (p > 0) sp.set('page', String(p))
-    if (params.username) sp.set('username', params.username)
-    const qs = sp.toString()
-    return qs ? `/hiscores?${qs}` : '/hiscores'
+async function getHiscoreWorlds(
+  visitor: Record<string, string>,
+): Promise<WorldEntry[]> {
+  try {
+    const { worlds } = await fetchWwwJson<WorldsData>("/api/hiscores/worlds", {
+      headers: visitor,
+    });
+    return worlds ?? [];
+  } catch {
+    return [];
   }
+}
+
+function problemOf(error: unknown): RecordsProblem {
+  if (error instanceof WwwError && error.status === 429) return "busy";
+  if (
+    error instanceof WwwError &&
+    (error.status === 503 || error.status === 404)
+  )
+    return "unavailable";
+  return "offline";
+}
+
+export default async function HiscoresPage({
+  searchParams,
+}: HiscoresPageProps) {
+  const {
+    skill: rawSkill,
+    page: rawPage,
+    username,
+    mode: rawMode,
+    world: rawWorld,
+    tab: rawTab,
+    milestone: rawMilestone,
+  } = await searchParams;
+
+  const world = parseWorld(rawWorld);
+  const tab: Tab =
+    rawTab === "records"
+      ? "records"
+      : rawTab === "collection"
+        ? "collection"
+        : "skills";
+  const page = Math.max(0, Number.parseInt(rawPage ?? "0", 10) || 0);
+  const mode = hiscoreModeOf(rawMode);
+  const milestone: HiscoreMilestone = rawMilestone === "200m" ? "200m" : "99";
+  const skill =
+    rawSkill && HISCORE_SKILLS.includes(rawSkill) ? rawSkill : "overall";
+  const recordSkill =
+    rawSkill && RECORD_SKILLS.includes(rawSkill) ? rawSkill : "";
+
+  const buildHref = (params: HiscoresLink) => {
+    const sp = new URLSearchParams();
+    const w = params.world ?? world;
+
+    if (w !== 1) sp.set("world", String(w));
+
+    if (params.username) {
+      sp.set("username", params.username);
+      return `/hiscores?${sp}`;
+    }
+
+    const t = params.tab ?? tab;
+
+    if (t === "records") {
+      sp.set("tab", "records");
+      const ms = params.milestone ?? milestone;
+      if (ms !== "99") sp.set("milestone", ms);
+      const s = params.skill ?? recordSkill;
+      if (s) sp.set("skill", s);
+    } else if (t === "collection") {
+      sp.set("tab", "collection");
+    } else {
+      const m = params.mode ?? mode;
+      if (m !== "normal") sp.set("mode", m);
+      const s = params.skill ?? skill;
+      if (s !== "overall") sp.set("skill", s);
+    }
+
+    const p = params.page ?? page;
+    if (p > 0) sp.set("page", String(p));
+
+    const qs = sp.toString();
+    return qs ? `/hiscores?${qs}` : "/hiscores";
+  };
+
+  const visitor = await pageHiscoreHeaders();
+  // started now and awaited after each tab's own request, so the two run together
+  const worldsPromise = getHiscoreWorlds(visitor);
+  const worldQuery = world === 1 ? "" : `&world=${world}`;
+
+  const worldSwitch = (worlds: WorldEntry[]) => (
+    <WorldSwitch
+      worlds={worlds}
+      world={world}
+      path="/hiscores"
+      hrefFor={(id) =>
+        buildHref({ world: id, page: 0, ...(username ? { username } : {}) })
+      }
+    />
+  );
 
   if (username) {
-    let ranks: PlayerRanksData['ranks'] = null
-    let staffRank = 0
-    let accountMode = 0
-    let diaries: PlayerRanksData['diaries'] = null
-    let appearance: PlayerRanksData['appearance'] = null
-    let loadError = false
+    let ranks: PlayerRanksData["ranks"] = null;
+    let staffRank = 0;
+    let accountMode = 0;
+    let diaries: PlayerRanksData["diaries"] = null;
+    let milestones: PlayerRanksData["milestones"] = null;
+    let collection: PlayerRanksData["collection"] = null;
+    let votes: PlayerRanksData["votes"] = null;
+    let appearance: PlayerRanksData["appearance"] = null;
+    let gameMode: PlayerRanksData["gameMode"];
+    let problem: RecordsProblem | null = null;
 
     try {
       const data = await fetchWwwJson<PlayerRanksData>(
-        `/api/hiscores/player?username=${encodeURIComponent(username)}`,
-      )
-      ranks = data.ranks
-      staffRank = data.staffRank ?? 0
-      accountMode = data.accountMode ?? 0
-      diaries = data.diaries ?? null
-      appearance = data.appearance ?? null
-    } catch {
-      loadError = true
+        `/api/hiscores/player?username=${encodeURIComponent(username)}${worldQuery}`,
+        { headers: visitor },
+      );
+      ranks = data.ranks;
+      staffRank = data.staffRank ?? 0;
+      accountMode = data.accountMode ?? 0;
+      diaries = data.diaries ?? null;
+      milestones = data.milestones ?? null;
+      collection = data.collection ?? null;
+      votes = data.votes ?? null;
+      appearance = data.appearance ?? null;
+      gameMode = data.gameMode;
+    } catch (error) {
+      problem = problemOf(error);
     }
 
+    const worlds = await worldsPromise;
     const rankEntries: [string, PlayerRank][] | null = ranks
       ? [
           ...HISCORE_SKILLS.map((entry): [string, PlayerRank] => [
             entry,
             (ranks as Record<string, PlayerRank>)[entry] ??
-              (entry === 'hits'
+              (entry === "hits"
                 ? { rank: 0, level: 10, experience: experienceForLevel(10) }
                 : { rank: 0, level: 1, experience: 0 }),
           ]),
@@ -91,17 +244,18 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
             ([entry]) => !HISCORE_SKILLS.includes(entry),
           ),
         ]
-      : null
+      : null;
 
     return (
       <Container className="py-16">
-        <div className="mb-8">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <Link
             href={buildHref({ username: undefined })}
             className="text-sm text-text-secondary hover:text-gold-400 transition-colors"
           >
             &laquo; Back to hiscores
           </Link>
+          {worldSwitch(worlds)}
         </div>
 
         <SectionTitle
@@ -114,13 +268,18 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
                 temper={diaries?.temper}
                 className="w-[20px] h-[26px]"
               />
+              <GameModeBadges gameMode={gameMode} height={22} />
               {formatUsername(username)}
             </span>
           }
           align="left"
         />
 
-        {loadError ? (
+        {problem === "busy" ? (
+          <p className="mt-10 text-center text-text-secondary">
+            Too many lookups from your address. Try again in a minute.
+          </p>
+        ) : problem ? (
           <p className="mt-10 text-center text-text-secondary">
             Unable to load player ranks. The game server may be offline.
           </p>
@@ -131,80 +290,233 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
         ) : (
           <div className="mt-8 flex flex-col lg:flex-row gap-8 lg:gap-12">
             <div className="flex-shrink-0 space-y-6 lg:w-72">
-              <PlayerAvatar appearance={appearance} />
+              <PlayerAvatar
+                appearance={appearance}
+                className="w-full rounded-lg"
+              />
               <DiaryCard diaries={diaries} accountMode={accountMode} />
+              <CollectionLogCard collection={collection} />
+              <VotesCard votes={votes} />
             </div>
 
             <div className="flex-1 min-w-0 overflow-x-auto rounded-lg border border-stone-700">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-stone-700 bg-stone-800/80">
-                    <th className="px-4 py-3 text-left font-adventure uppercase tracking-wide text-gold-400">Skill</th>
-                    <th className="px-4 py-3 text-right font-adventure uppercase tracking-wide text-gold-400">Rank</th>
-                    <th className="px-4 py-3 text-right font-adventure uppercase tracking-wide text-gold-400">Level</th>
-                    <th className="px-4 py-3 text-right font-adventure uppercase tracking-wide text-gold-400">Experience</th>
+                    <th className="px-4 py-3 text-left font-adventure uppercase tracking-wide text-gold-400">
+                      Skill
+                    </th>
+                    <th className="px-4 py-3 text-right font-adventure uppercase tracking-wide text-gold-400">
+                      Rank
+                    </th>
+                    <th className="px-4 py-3 text-right font-adventure uppercase tracking-wide text-gold-400">
+                      Level
+                    </th>
+                    <th className="px-4 py-3 text-right font-adventure uppercase tracking-wide text-gold-400">
+                      Experience
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rankEntries.map(([skillKey, rank]) => (
-                    <tr
-                      key={skillKey}
-                      className="border-b border-stone-800 last:border-0 hover:bg-stone-800/50 transition-colors"
-                    >
-                      <td className="px-4 py-2.5">
-                        <Link
-                          href={buildHref({ skill: skillKey, page: 0, username: undefined })}
-                          className="inline-flex items-center gap-2 text-text-primary hover:text-gold-400 transition-colors"
-                        >
-                          <SkillIcon skill={skillKey} className="w-5 h-5" />
-                          {skillLabel(skillKey)}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-2.5 text-right text-text-secondary">
-                        {rank.rank > 0 ? formatNumber(rank.rank) : '—'}
-                      </td>
-                      <td className="px-4 py-2.5 text-right font-medium text-gold-400">
-                        {formatNumber(rank.level)}
-                      </td>
-                      <td className="px-4 py-2.5 text-right text-text-secondary">
-                        {formatNumber(rank.experience)}
-                      </td>
-                    </tr>
-                  ))}
+                  {rankEntries.map(([skillKey, rank]) => {
+                    const reached = milestones?.[skillKey];
+
+                    return (
+                      <tr
+                        key={skillKey}
+                        className="border-b border-stone-800 last:border-0 hover:bg-stone-800/50 transition-colors"
+                      >
+                        <td className="px-4 py-2.5">
+                          <Link
+                            href={buildHref({
+                              tab: "skills",
+                              skill: skillKey,
+                              page: 0,
+                              username: undefined,
+                            })}
+                            className="inline-flex items-center gap-2 text-text-primary hover:text-gold-400 transition-colors"
+                          >
+                            <SkillIcon skill={skillKey} className="w-5 h-5" />
+                            {skillLabel(skillKey)}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-2.5 text-right text-text-secondary">
+                          {rank.rank > 0 ? formatNumber(rank.rank) : "—"}
+                        </td>
+                        <td className="px-4 py-2.5 text-right font-medium text-gold-400">
+                          {formatNumber(rank.level)}
+                          {reached?.["99"] ? (
+                            <span className="ml-1.5 text-xs font-normal text-text-muted">
+                              ({formatShortDate(reached["99"])})
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className="px-4 py-2.5 text-right text-text-secondary">
+                          {formatNumber(rank.experience)}
+                          {reached?.["200m"] ? (
+                            <span className="ml-1.5 text-xs text-text-muted">
+                              ({formatShortDate(reached["200m"])})
+                            </span>
+                          ) : null}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </div>
         )}
       </Container>
-    )
+    );
   }
 
-  let data: HiscoresData | null = null
-  let loadError = false
+  const worldName = (worlds: WorldEntry[]) =>
+    worlds.length > 1 ? worlds.find(({ id }) => id === world)?.name : undefined;
+
+  const header = (worlds: WorldEntry[]) => (
+    <>
+      <div className="mt-8 flex justify-center">{worldSwitch(worlds)}</div>
+
+      <nav
+        className="mt-8 grid grid-cols-3 overflow-hidden rounded-lg border border-stone-700 bg-stone-900/60"
+        aria-label="Hiscores"
+      >
+        {TABS.map(({ id, label }) => (
+          <Link
+            key={id}
+            href={buildHref({
+              tab: id,
+              skill: id === "skills" ? "overall" : "",
+              page: 0,
+            })}
+            aria-current={id === tab ? "page" : undefined}
+            className={cn(
+              "inline-flex items-center justify-center gap-2 px-4 py-3 font-adventure text-lg uppercase tracking-wide transition-colors",
+              id === tab
+                ? "bg-stone-800 text-gold-400"
+                : "text-text-secondary hover:bg-stone-800/50 hover:text-gold-400",
+            )}
+          >
+            <HiscoresIcons tab={id} className="w-5 h-5" />
+            {label}
+          </Link>
+        ))}
+      </nav>
+    </>
+  );
+
+  if (tab === "records") {
+    let records: HiscoreRecordsData | null = null;
+    let problem: RecordsProblem | null = null;
+
+    try {
+      const query = new URLSearchParams({ milestone, page: String(page) });
+      if (recordSkill) query.set("skill", recordSkill);
+      if (world !== 1) query.set("world", String(world));
+
+      records = await fetchWwwJson<HiscoreRecordsData>(
+        `/api/hiscores/records?${query}`,
+        {
+          headers: visitor,
+        },
+      );
+    } catch (error) {
+      problem = problemOf(error);
+    }
+
+    const worlds = await worldsPromise;
+
+    return (
+      <Container className="py-16">
+        <SectionTitle
+          eyebrow={worldName(worlds) ?? "Records"}
+          title="Records"
+          description=""
+        />
+
+        {header(worlds)}
+
+        <HiscoreRecords
+          data={records}
+          problem={problem}
+          milestone={milestone}
+          skill={recordSkill}
+          page={page}
+          skills={RECORD_SKILLS}
+          href={(link) => buildHref({ tab: "records", ...link })}
+        />
+      </Container>
+    );
+  }
+
+  if (tab === "collection") {
+    let collection: HiscoreCollectionData | null = null;
+    let problem: RecordsProblem | null = null;
+
+    try {
+      const query = new URLSearchParams({ page: String(page) });
+      if (world !== 1) query.set("world", String(world));
+
+      collection = await fetchWwwJson<HiscoreCollectionData>(
+        `/api/hiscores/collection?${query}`,
+        { headers: visitor },
+      );
+    } catch (error) {
+      problem = problemOf(error);
+    }
+
+    const worlds = await worldsPromise;
+
+    return (
+      <Container className="py-16">
+        <SectionTitle
+          eyebrow={worldName(worlds) ?? "Leaderboard"}
+          title="Collection Log"
+          description="Every item worth collecting, and how much of the log each player has found."
+        />
+
+        {header(worlds)}
+
+        <HiscoreCollection
+          data={collection}
+          problem={problem}
+          page={page}
+          href={(link) => buildHref({ tab: "collection", ...link })}
+        />
+      </Container>
+    );
+  }
+
+  let data: HiscoresData | null = null;
+  let problem: RecordsProblem | null = null;
 
   try {
     data = await fetchWwwJson<HiscoresData>(
-      `/api/hiscores?skill=${encodeURIComponent(skill)}&page=${page}&mode=${mode}`,
-    )
-  } catch {
-    loadError = true
+      `/api/hiscores?skill=${encodeURIComponent(skill)}&page=${page}&mode=${mode}${worldQuery}`,
+      { headers: visitor },
+    );
+  } catch (error) {
+    problem = problemOf(error);
   }
 
-  const ranks = data?.ranks ?? []
-  const totalPages = data?.pages ?? 0
+  const worlds = await worldsPromise;
+  const ranks = data?.ranks ?? [];
+  const totalPages = data?.pages ?? 0;
 
   return (
     <Container className="py-16">
       <SectionTitle
-        eyebrow="Rankings"
-        title={`${mode === 'ironman' ? 'Ironman ' : ''}${skillLabel(skill)} Hiscores`}
+        eyebrow={worldName(worlds) ?? "Rankings"}
+        title={`${modeLabel(mode)} ${skillLabel(skill)} Hiscores`}
         description={
-          mode === 'ironman'
-            ? 'Ironman accounts ranked among themselves. Their helms are tempered by the Achievement Diaries.'
-            : 'Live rankings across all 19 skills, straight from the game server.'
+          mode === "ironman"
+            ? "Ironman accounts ranked among themselves."
+            : `${modeLabel(mode)} characters ranked among themselves.`
         }
       />
+
+      {header(worlds)}
 
       <div className="mt-8 flex justify-center gap-2">
         {MODES.map((m) => (
@@ -212,28 +524,31 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
             key={m.id}
             href={buildHref({ mode: m.id, page: 0 })}
             className={cn(
-              'inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wide border transition-colors',
+              "inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wide border transition-colors",
               m.id === mode
-                ? 'border-gold-500/60 bg-gold-500/10 text-gold-400'
-                : 'border-stone-700 text-text-secondary hover:border-gold-500/40 hover:text-gold-400'
+                ? "border-gold-500/60 bg-gold-500/10 text-gold-400"
+                : "border-stone-700 text-text-secondary hover:border-gold-500/40 hover:text-gold-400",
             )}
           >
-            {m.id === 'ironman' && <IronBadge accountMode={1} temper={0} />}
+            {m.id === "ironman" && <IronBadge accountMode={1} temper={0} />}
+            {m.tier !== undefined && (
+              <GameModeBadges gameMode={{ tier: m.tier, path: 0 }} />
+            )}
             {m.label}
           </Link>
         ))}
       </div>
 
       <div className="mt-10 flex flex-wrap justify-center gap-2">
-        {skills.map((s) => (
-                    <Link
+        {HISCORE_SKILLS.map((s) => (
+          <Link
             key={s}
             href={buildHref({ skill: s, page: 0 })}
             className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium uppercase tracking-wide border transition-colors',
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium uppercase tracking-wide border transition-colors",
               s === skill
-                ? 'border-gold-500/60 bg-gold-500/10 text-gold-400'
-                : 'border-stone-700 text-text-secondary hover:border-gold-500/40 hover:text-gold-400'
+                ? "border-gold-500/60 bg-gold-500/10 text-gold-400"
+                : "border-stone-700 text-text-secondary hover:border-gold-500/40 hover:text-gold-400",
             )}
           >
             <SkillIcon skill={s} className="w-4 h-4" />
@@ -242,15 +557,19 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
         ))}
       </div>
 
-      {loadError ? (
+      {problem === "busy" ? (
+        <p className="mt-12 text-center text-text-secondary">
+          Too many requests from your address. Try again in a minute.
+        </p>
+      ) : problem ? (
         <p className="mt-12 text-center text-text-secondary">
           Unable to load hiscores. The game server may be offline.
         </p>
       ) : ranks.length === 0 ? (
         <p className="mt-12 text-center text-text-secondary">
-          {mode === 'ironman'
-            ? 'No Ironman accounts are ranked yet. Choose Ironman when you register, or ask Paul in Lumbridge.'
-            : 'No players are ranked yet — be the first!'}
+          {mode === "ironman"
+            ? "No Ironman accounts are ranked yet. Choose Ironman when you register, or ask Paul in Lumbridge."
+            : "No players are ranked yet — be the first!"}
         </p>
       ) : (
         <>
@@ -258,10 +577,18 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-stone-700 bg-stone-800/80">
-                  <th className="px-4 py-3 text-left font-adventure uppercase tracking-wide text-gold-400">Rank</th>
-                  <th className="px-4 py-3 text-left font-adventure uppercase tracking-wide text-gold-400">Username</th>
-                  <th className="px-4 py-3 text-right font-adventure uppercase tracking-wide text-gold-400">Level</th>
-                  <th className="px-4 py-3 text-right font-adventure uppercase tracking-wide text-gold-400">Experience</th>
+                  <th className="px-4 py-3 text-left font-adventure uppercase tracking-wide text-gold-400">
+                    Rank
+                  </th>
+                  <th className="px-4 py-3 text-left font-adventure uppercase tracking-wide text-gold-400">
+                    Username
+                  </th>
+                  <th className="px-4 py-3 text-right font-adventure uppercase tracking-wide text-gold-400">
+                    Level
+                  </th>
+                  <th className="px-4 py-3 text-right font-adventure uppercase tracking-wide text-gold-400">
+                    Experience
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -279,7 +606,11 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
                         className="inline-flex items-center gap-1.5 text-text-primary hover:text-gold-400 transition-colors"
                       >
                         <Crown rank={entry.staffRank} />
-                        <IronBadge accountMode={entry.accountMode} temper={entry.temper} />
+                        <IronBadge
+                          accountMode={entry.accountMode}
+                          temper={entry.temper}
+                        />
+                        <GameModeBadges gameMode={entry.gameMode} />
                         {formatUsername(entry.username)}
                       </Link>
                     </td>
@@ -288,6 +619,11 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
                     </td>
                     <td className="px-4 py-2.5 text-right text-text-secondary">
                       {formatNumber(entry.experience)}
+                      {entry.maxedAt ? (
+                        <span className="ml-1.5 text-xs text-text-muted">
+                          ({formatShortDate(entry.maxedAt)})
+                        </span>
+                      ) : null}
                     </td>
                   </tr>
                 ))}
@@ -303,6 +639,5 @@ export default async function HiscoresPage({ searchParams }: HiscoresPageProps) 
         </>
       )}
     </Container>
-  )
+  );
 }
-

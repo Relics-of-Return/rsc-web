@@ -27,11 +27,15 @@ export interface WorldEntry {
   /** Display name, e.g. "World 2" — set per world in rsc-www's config. */
   name?: string
   country?: string
+  /** Set on a world only the signed-in users it is kept for can see. */
+  private?: boolean
   members?: boolean | number
   players?: number
   online?: boolean | number
   /** True on a world where botting is allowed (world 2). */
   botting?: boolean
+  /** The release the world runs: "live", or "beta" for the beta world. */
+  channel?: string
   /** Client URL that reaches this particular world — the launcher and a local
    *  stack read the launch string in its hash. */
   clientURL?: string
@@ -57,12 +61,81 @@ export interface HiscoreRank {
   staffRank?: number
   accountMode?: number
   temper?: number
+  /** Null when the character has not chosen a mode yet; absent on an old API. */
+  gameMode?: GameMode | null
+  /** When the skill reached 200M (unix seconds); unset for an earlier one. */
+  maxedAt?: number | null
 }
 
 /** Skill ranking table as returned by rsc-www's `/api/hiscores`. */
 export interface HiscoresData {
   ranks: HiscoreRank[]
   pages?: number
+}
+
+/** A skill milestone the records keep: level 99, or the 200M cap. */
+export type HiscoreMilestone = '99' | '200m'
+
+/** A player reaching a milestone in a skill, from `/api/hiscores/records`. */
+export interface HiscoreRecord {
+  skill: string
+  username: string
+  /** Unix seconds. */
+  date: number
+  staffRank: number
+  accountMode: number
+  temper: number
+}
+
+/** How many players have a milestone in a skill, and how many are Ironmen. */
+export interface MilestoneCount {
+  all: number
+  ironman: number
+}
+
+/** The records for one milestone on one world, from `/api/hiscores/records`. */
+export interface HiscoreRecordsData {
+  world: number
+  milestone: HiscoreMilestone
+  /** The first player to reach it in each skill that has one. */
+  firsts: HiscoreRecord[]
+  /** Everyone who has, newest first, one page of them. */
+  entries: HiscoreRecord[]
+  pages: number
+  /** Per skill, plus `every` for all of them at once; null until first counted. */
+  counts: Record<string, MilestoneCount> | null
+  /** When the counts were taken (unix seconds). */
+  countedAt: number
+}
+
+/** One row of the collection log rankings, from `/api/hiscores/collection`. */
+export interface CollectionLogRank {
+  rank: number
+  username: string
+  /** How many unique items they have logged. */
+  collections: number
+  /** How many sources (e.g. a monster) they have every item of. */
+  completions: number
+  staffRank: number
+  accountMode: number
+  temper: number
+}
+
+/** One page of a world's collection log rankings, from `/api/hiscores/collection`. */
+export interface HiscoreCollectionData {
+  world: number
+  page: number
+  pages: number
+  pageSize: number
+  /** How many players have anything logged. */
+  total: number
+  /** Every distinct item the log can hold (the "124 / 480" denominator). */
+  totalEntries: number
+  /** How many sources a completion can be made of. */
+  totalSources: number
+  /** When the ranks were rebuilt (unix seconds); 0 before the first rebuild. */
+  countedAt: number
+  rows: CollectionLogRank[]
 }
 
 /**
@@ -75,11 +148,27 @@ export interface DiarySummary {
   claimed: Record<string, number>
 }
 
+/** A character's game mode: tier 0 Normal to 3 Realism, path 0 none to 4 Noble. */
+export interface GameMode {
+  tier: number
+  path: number
+}
+
 /** Per-skill rank of a single player. */
 export interface PlayerRank {
   rank: number
   level: number
   experience: number
+}
+
+/** How much of the collection log a player has found, from `/api/hiscores/player`. */
+export interface PlayerCollectionLog {
+  /** How many unique items they have logged. */
+  collections: number
+  /** How many sources they have every item of. */
+  completions: number
+  /** Every distinct item the log can hold. */
+  total: number
 }
 
 /** Player lookup as returned by rsc-www's `/api/hiscores/player`. */
@@ -90,9 +179,17 @@ export interface PlayerRanksData {
   staffRank?: number
   /** Account type: 0 standard, 1 Ironman. */
   accountMode?: number
+  /** Null when the character has not chosen a mode yet; absent on an old API. */
+  gameMode?: GameMode | null
   questPoints?: number
   /** How far the player's achievement diaries have got. */
   diaries?: DiarySummary | null
+  /** When each skill reached 99 and 200M (unix seconds), since tracking began. */
+  milestones?: Record<string, Partial<Record<HiscoreMilestone, number>>> | null
+  /** The collection log summary, or null when the data server doesn't know it. */
+  collection?: PlayerCollectionLog | null
+  /** Every toplist vote the account has cast, or null when the ledger can't be asked. */
+  votes?: number | null
   /** The character sprites, colours and equipment to draw the avatar with. */
   appearance?: PlayerAppearance | null
 }
@@ -605,6 +702,8 @@ export interface AccountDetails {
 export interface AccountCharacter {
   ranks: Record<string, PlayerRank>
   accountMode: number
+  /** Null when not chosen yet; absent on an old API. */
+  gameMode?: GameMode | null
   diaries: DiarySummary | null
   appearance: PlayerAppearance | null
 }
@@ -622,10 +721,21 @@ export interface AccountWorld {
   character: AccountCharacter | null
 }
 
+/** An account's toplist votes, from World 1's ledger (times in unix seconds, 0 for never). */
+export interface VoteSummary {
+  total: number
+  /** Votes not yet collected with ::claim. */
+  waiting: number
+  lastVoteAt: number
+  nextVoteAt: number
+}
+
 export interface AccountPageData {
   username: string
   rank: number
   worlds: AccountWorld[]
+  /** null when the vote ledger can't be asked; absent on an old API. */
+  votes?: VoteSummary | null
 }
 
 export interface PasswordChangeResult {

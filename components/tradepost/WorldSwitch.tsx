@@ -34,6 +34,7 @@ export function WorldSwitch({
           )}
         >
           {entry.name ?? `World ${entry.id}`}
+          {entry.private ? " (private)" : null}
         </Link>
       ))}
     </nav>

@@ -18,6 +18,7 @@ export const DEFAULT_SKILLS = [
   'agility',
   'thieving',
   'construction',
+  'farming',
 ]
 
 /**
@@ -37,12 +38,6 @@ export function skillLabel(skill: string): string {
   const override = SKILL_LABEL_OVERRIDES[skill]
   if (override) return override
   return skill.charAt(0).toUpperCase() + skill.slice(1)
-}
-
-/** Sort index for a skill in hiscores display order (unknown skills last). */
-export function hiscoreSkillOrder(skill: string): number {
-  const index = HISCORE_SKILLS.indexOf(skill)
-  return index === -1 ? HISCORE_SKILLS.length : index
 }
 
 const SKILL_ICON_PATHS: Record<string, string> = {
@@ -66,6 +61,8 @@ const SKILL_ICON_PATHS: Record<string, string> = {
   hits: '/skills/hitpoints.png',
   overall: '/skills/overall.webp',
   construction: '/skills/construction.png',
+  farming: '/skills/farming.png',
+  runecraft: '/skills/runecraft.png',
 }
 
 /** Public icon path for a skill, or `undefined` when no icon exists. */

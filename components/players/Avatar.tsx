@@ -3,9 +3,11 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { RSCAvatar, type PlayerAppearance } from '@/lib/avatar'
+import { cn } from '@/lib/utils'
 
 interface AvatarProps {
   appearance: PlayerAppearance | null | undefined
+  className?: string
 }
 
 /**
@@ -16,7 +18,7 @@ interface AvatarProps {
  * is rendered at 2x scale (172x230 px for the 86x115 game sprite) for
  * retina clarity.
  */
-export function PlayerAvatar({ appearance }: AvatarProps) {
+export function PlayerAvatar({ appearance, className }: AvatarProps) {
   // this div is never given React children -- the effect below is the only
   // thing that ever writes to it. keeping it untouched by JSX means React's
   // own reconciliation can never collide with the manual appendChild, which
@@ -55,7 +57,7 @@ export function PlayerAvatar({ appearance }: AvatarProps) {
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="relative flex items-end justify-center min-w-[196px] min-h-[254px] p-3 bg-stone-800/40 border border-stone-700 rounded">
+      <div className={cn('relative flex items-end justify-center min-w-[196px] min-h-[254px] p-3 bg-stone-800/40 border border-stone-700 rounded', className)}>
         {/* canvas-only node: React never renders children into this one */}
         <div ref={canvasHostRef} />
 

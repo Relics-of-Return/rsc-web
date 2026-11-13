@@ -1,32 +1,17 @@
-import { NextResponse, type NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-import { getWwwApiUrl } from '@/lib/www'
+import { proxyGet } from '@/lib/admin-proxy'
+import { hiscoreHeaders } from '@/lib/www'
 
 // BFF: proxy rsc-www's /api/hiscores/player (per-player rank lookup).
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
-  const username = request.nextUrl.searchParams.get('username') ?? ''
+  const params = request.nextUrl.searchParams
+  const query = new URLSearchParams({
+    username: params.get('username') ?? '',
+    world: params.get('world') ?? '1',
+  })
 
-  try {
-    const res = await fetch(
-      `${getWwwApiUrl()}/api/hiscores/player?username=${encodeURIComponent(username)}`,
-      { cache: 'no-store' },
-    )
-
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: 'failed to fetch player ranks' },
-        { status: res.status },
-      )
-    }
-
-    const data = await res.json()
-    return NextResponse.json(data)
-  } catch {
-    return NextResponse.json(
-      { error: 'the website API is unreachable' },
-      { status: 502 },
-    )
-  }
+  return proxyGet(`/api/hiscores/player?${query}`, { headers: hiscoreHeaders(request) })
 }
