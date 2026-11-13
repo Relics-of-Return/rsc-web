@@ -119,7 +119,7 @@ export function HeroSection({ serverNow }: { serverNow: number }) {
               className="h-[22px] w-[22px] transition-transform duration-300 group-hover:scale-110"
               aria-hidden="true"
             />
-            Play in Browser
+            Play in Browser/Mobile
           </Link>
           <Link href="/download" className={BUTTON}>
             <PlayCircle

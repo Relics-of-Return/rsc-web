@@ -16,7 +16,7 @@ export function getLlmsTxt(): string {
 Relics of Return is an open-source RuneScape Classic (RSC) private server and emulation platform. It delivers an authentic 2003 retro MMORPG experience paired with modern web technologies, seamless browser-based play, cross-platform desktop clients, real-time hiscores, an in-game trade post, and continuous quality-of-life improvements.
 
 ## Play & Client Downloads
-- [Play in Browser](${SITE_URL}/play): Instant in-browser game client powered by WebGL/Canvas, requiring no download or local installation.
+- [Play in Browser/Mobile](${SITE_URL}/play): Instant in-browser game client powered by WebGL/Canvas, requiring no download or local installation.
 - [Download Desktop Launcher](${SITE_URL}/download): Cross-platform standalone desktop launcher for Windows, macOS, and Linux with auto-updates and enhanced performance.
 
 ## World & Community Features
