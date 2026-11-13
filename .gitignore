@@ -37,3 +37,6 @@ next-env.d.ts
 # Agents
 AGENTS.md
 .vercel
+
+# scripts
+scripts/*
