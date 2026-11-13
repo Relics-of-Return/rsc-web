@@ -2,8 +2,11 @@
 
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import { KeyRound, Link2, ShieldCheck, Trophy } from 'lucide-react'
+import { KeyRound, Link2, ShieldCheck, Trophy, Vote } from 'lucide-react'
 
+import { GameModeBadges } from '@/components/players/GameModeBadges'
+import { characterModeText } from '@/data/game-modes'
+import { SERVER_LIST_VOTE_URL } from '@/lib/constants'
 import type { AccountPageData, AccountWorld } from '@/lib/types'
 import { cn, formatUsername } from '@/lib/utils'
 import { Dot, Fact, Panel, longDate, onlineWorld, relativeTime, standingOf } from './parts'
@@ -41,7 +44,12 @@ export function OverviewPanel({ data, home, onTab }: { data: AccountPageData; ho
         {account ? (
           <dl>
             <Fact label="Username">{formatUsername(account.username)}</Fact>
-            <Fact label="Account type">{account.accountMode === 1 ? 'Ironman' : 'Standard'}</Fact>
+            <Fact label="Game mode">
+              <span className="inline-flex items-center gap-1.5">
+                <GameModeBadges gameMode={home?.character?.gameMode} />
+                {characterModeText(account.accountMode, home?.character?.gameMode)}
+              </span>
+            </Fact>
             <Fact label="Member since">{longDate(account.createdAt)}</Fact>
             <Fact label="Last logged in">
               {account.lastLogin > 0 ? (
@@ -87,6 +95,54 @@ export function OverviewPanel({ data, home, onTab }: { data: AccountPageData; ho
           </ul>
         )}
       </Panel>
+
+      {data.votes !== undefined && (
+        <Panel
+          title="Voting"
+          description="Every vote is 250,000 coins and a vote token, once every 24 hours."
+          action={
+            <a
+              href={`${SERVER_LIST_VOTE_URL}?username=${encodeURIComponent(data.username)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-md border border-gold-500/50 px-3 py-1.5 font-adventure text-sm uppercase tracking-wide text-gold-400 transition-colors hover:bg-gold-500/10"
+            >
+              <Vote className="h-4 w-4" aria-hidden="true" />
+              Vote
+              <span className="sr-only"> on the RSC Server List (opens in a new tab)</span>
+            </a>
+          }
+        >
+          {data.votes ? (
+          <dl>
+            <Fact label="Total votes">{data.votes.total.toLocaleString('en-GB')}</Fact>
+            <Fact label="Last voted">
+              {data.votes.lastVoteAt > 0 ? (
+                <>
+                  {longDate(data.votes.lastVoteAt)} <span className="text-text-muted">({relativeTime(data.votes.lastVoteAt)})</span>
+                </>
+              ) : (
+                'Never'
+              )}
+            </Fact>
+            <Fact label="Next vote">
+              {data.votes.nextVoteAt > Date.now() / 1000 ? relativeTime(data.votes.nextVoteAt) : <span className="text-moss">Now</span>}
+            </Fact>
+            <Fact label="Rewards to claim">
+              {data.votes.waiting > 0 ? (
+                <span className="text-gold-400">
+                  {data.votes.waiting} &mdash; type <b>::claim</b> in game
+                </span>
+              ) : (
+                'None'
+              )}
+            </Fact>
+          </dl>
+          ) : (
+            <p className="text-sm text-text-secondary">Your votes will show here after the next game update.</p>
+          )}
+        </Panel>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <QuickAction icon={<Trophy className="h-4 w-4" />} title="Your hiscores" text="Your ranks against every other player." href={`/hiscores?username=${encodeURIComponent(data.username)}`} />

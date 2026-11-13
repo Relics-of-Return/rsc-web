@@ -3,6 +3,7 @@
 import { PlayerAvatar } from '@/components/players/Avatar'
 import { Crown } from '@/components/players/Crown'
 import { IronBadge } from '@/components/players/IronBadge'
+import { characterModeText } from '@/data/game-modes'
 import { combatLevel } from '@/data/skills'
 import { isStaff, staffRankName } from '@/data/ranks'
 import type { AccountPageData, AccountWorld } from '@/lib/types'
@@ -52,7 +53,7 @@ export function ProfileBanner({ data, home }: { data: AccountPageData; home: Acc
               <Dot tone={online ? 'good' : 'off'} />
               {online ? `Online on ${online.name}` : 'Offline'}
             </span>
-            <span className="text-text-secondary">{accountMode === 1 ? 'Ironman' : 'Standard account'}</span>
+            <span className="text-text-secondary">{characterModeText(accountMode, character?.gameMode)}</span>
             {isStaff(data.rank) && <span className="text-gold-400">{staffRankName(data.rank)}</span>}
           </div>
 

@@ -4,6 +4,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 import { DiaryCard } from '@/components/players/DiaryCard'
+import { GameModeBadges } from '@/components/players/GameModeBadges'
+import { gameModeText } from '@/data/game-modes'
 import { DEFAULT_SKILLS, MAX_LEVEL, combatLevel, experienceForLevel, skillIconPath, skillLabel } from '@/data/skills'
 import type { AccountWorld, PlayerRank } from '@/lib/types'
 import { cn, formatNumber } from '@/lib/utils'
@@ -94,6 +96,19 @@ export function CharacterPanel({ worlds, selected, onSelect, username }: { world
           </p>
         ) : (
           <>
+            {character.gameMode !== undefined && (
+              <p className="mb-4 flex items-center gap-1.5 text-sm">
+                <span className="text-text-muted">Game mode</span>
+                {character.gameMode ? (
+                  <>
+                    <GameModeBadges gameMode={character.gameMode} />
+                    <span className="text-text-primary">{gameModeText(character.gameMode)}</span>
+                  </>
+                ) : (
+                  <span className="text-text-secondary">Not chosen yet</span>
+                )}
+              </p>
+            )}
             <div className="mb-4 grid gap-2 sm:grid-cols-3">
               <div className="rounded-md border border-stone-700 bg-stone-950/60 px-4 py-3">
                 <div className="text-[10px] uppercase tracking-[0.16em] text-text-muted">Total level</div>
