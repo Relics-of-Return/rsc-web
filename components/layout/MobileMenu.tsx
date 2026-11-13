@@ -80,12 +80,14 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
       aria-hidden={!isOpen}
     >
       <div className="absolute inset-0 bg-stone-950/95 backdrop-blur-md" onClick={onClose} />
-      <div className="relative h-full flex flex-col items-center justify-center px-6">
+      {/* scrolls, so a phone on its side (about 390px high) still reaches every link */}
+      <div className="relative h-full overflow-y-auto overscroll-contain">
+      <div className="flex min-h-full flex-col items-center justify-center px-6 py-14 [@media(max-height:500px)]:py-6">
         <button
           ref={closeButtonRef}
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-text-secondary hover:text-gold-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/50 rounded-md"
+          className="fixed top-4 right-4 z-10 p-2 text-text-secondary hover:text-gold-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/50 rounded-md"
           aria-label="Close menu"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -99,7 +101,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         </button>
 
         <nav aria-label="Mobile">
-          <ul className="flex flex-col items-center gap-6">
+          <ul className="flex flex-col items-center gap-6 [@media(max-height:500px)]:gap-2">
             {menuItems.map((item) => {
               const href = getHref(item)
               const active = pathname === href
@@ -109,7 +111,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                     href={href}
                     onClick={onClose}
                     className={cn(
-                      'font-adventure text-3xl uppercase tracking-wide transition-colors',
+                      'font-adventure text-3xl uppercase tracking-wide transition-colors [@media(max-height:500px)]:text-2xl',
                       active ? 'text-gold-400' : 'text-text-primary hover:text-gold-400'
                     )}
                   >
@@ -181,6 +183,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         >
           Play Now
         </Link>
+      </div>
       </div>
     </div>
   )

@@ -392,7 +392,7 @@ export default async function HiscoresPage({
             })}
             aria-current={id === tab ? "page" : undefined}
             className={cn(
-              "inline-flex items-center justify-center gap-2 px-4 py-3 font-adventure text-lg uppercase tracking-wide transition-colors",
+              "inline-flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-center font-adventure text-sm uppercase tracking-wide transition-colors sm:flex-row sm:gap-2 sm:px-4 sm:py-3 sm:text-lg",
               id === tab
                 ? "bg-stone-800 text-gold-400"
                 : "text-text-secondary hover:bg-stone-800/50 hover:text-gold-400",
@@ -518,7 +518,7 @@ export default async function HiscoresPage({
 
       {header(worlds)}
 
-      <div className="mt-8 flex justify-center gap-2">
+      <div className="mt-8 flex flex-wrap justify-center gap-2">
         {MODES.map((m) => (
           <Link
             key={m.id}

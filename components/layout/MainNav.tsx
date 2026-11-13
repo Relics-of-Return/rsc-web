@@ -18,9 +18,6 @@ export function MainNav() {
 
   const isActive = (item: string) => {
     if (item === 'Home') return pathname === '/'
-
-    // startsWith so a sub-page keeps its section highlighted, e.g. the
-    // world 2 map at /map/world-2
     return pathname.startsWith(`/${item.toLowerCase()}`)
   }
 
@@ -30,6 +27,7 @@ export function MainNav() {
   }
 
   return (
+    <>
     <header className="sticky top-0 z-40 bg-stone-900/90 backdrop-blur-md border-b border-stone-800">
       <Container>
         <nav className="flex items-center justify-between h-16" aria-label="Primary">
@@ -89,8 +87,10 @@ export function MainNav() {
           </button>
         </nav>
       </Container>
-
-      <MobileMenu isOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
     </header>
+
+    {/* outside the header: its backdrop-blur would make the menu's fixed inset-0 only header-high */}
+    <MobileMenu isOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+    </>
   )
 }

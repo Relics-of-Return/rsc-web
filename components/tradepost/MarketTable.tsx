@@ -138,7 +138,8 @@ export function MarketTable({ rows, catalogue, now, world }: MarketTableProps) {
         </p>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-lg border border-stone-700">
+      {/* relative: the headers' sr-only labels are absolute, and would otherwise widen the page past the scroller */}
+      <div className="relative mt-4 overflow-x-auto rounded-lg border border-stone-700">
         <table className="w-full min-w-[760px] text-sm">
           <thead>
             <tr className="border-b border-stone-700 bg-stone-800/80">
