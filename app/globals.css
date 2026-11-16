@@ -190,6 +190,53 @@
   border-color: rgba(163, 209, 63, 0.7);
 }
 
+.rsc-dmap .leaflet-tile {
+  image-rendering: pixelated;
+}
+
+.rsc-dmap-anchor {
+  background: none;
+  border: 0;
+}
+
+.rsc-dmap-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  white-space: pre;
+  font-family: Arial, sans-serif;
+  line-height: 1.1;
+  text-shadow: 1px 1px 0 #000;
+  pointer-events: none;
+}
+
+.rsc-dmap-point {
+  position: absolute;
+  max-width: none;
+  transform: translate(-50%, -50%);
+  image-rendering: pixelated;
+}
+
+.rsc-dmap--far .rsc-dmap-label,
+.rsc-dmap--far .rsc-dmap-point,
+.rsc-dmap--compact .rsc-map-marker__name {
+  display: none;
+}
+
+.rsc-dmap-planes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #fff;
+}
+
+.rsc-dmap-planes span {
+  padding: 2px 4px;
+  color: #333;
+  font: 600 10px/1.2 Arial, sans-serif;
+  white-space: nowrap;
+}
+
 @keyframes ambient-pulse {
   0%,
   100% {

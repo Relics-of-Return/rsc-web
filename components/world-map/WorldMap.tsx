@@ -1,8 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import 'leaflet/dist/leaflet.css'
 
 import { Crown } from '@/components/players/Crown'
+import { addExtraPoints, loadBakedMap, swapInBakedPlanes } from '@/components/world-map/baked-map'
+import { DetailedMapView } from '@/components/world-map/detailed-map'
 import { PlayerMarkers } from '@/components/world-map/player-markers'
 import { Input } from '@/components/ui/Input'
 import { usePlayerPositions } from '@/hooks/usePlayerPositions'
@@ -10,18 +13,27 @@ import type { PlayerPosition } from '@/lib/types'
 import { cn, formatUsername } from '@/lib/utils'
 import { gameToMap, planeLabel } from '@/lib/world-map'
 
-/**
- * The two worlds get their own map, and each one looks like the world it
- * belongs to: world 1 in the site's gold, world 2 — where botting is allowed —
- * in moss green, down to the colour of the player pins. Everything else is
- * shared, because the worlds run the same landscape.
- */
 export type WorldMapVariant = 'classic' | 'botting'
+
+type MapStyle = 'detailed' | 'classic'
+
+const STYLE_KEY = 'world-map-style'
+
+function storedStyle(): MapStyle {
+  try {
+    return localStorage.getItem(STYLE_KEY) === 'classic' ? 'classic' : 'detailed'
+  } catch {
+    return 'detailed'
+  }
+}
+
+const noSubscription = () => () => {}
+
+type MapMarkers = Pick<PlayerMarkers, 'setPlayers' | 'setSelected' | 'setShowNames' | 'focus' | 'destroy'>
 
 const VARIANTS: Record<
   WorldMapVariant,
   {
-    /** Scopes the marker colour overrides in app/globals.css. */
     mapClass: string
     checkbox: string
     dot: string
@@ -51,9 +63,7 @@ const VARIANTS: Record<
 }
 
 interface WorldMapProps {
-  /** Server-rendered positions, replaced by the first poll. */
   initialPlayers?: PlayerPosition[]
-  /** Which world's positions to plot — each world has its own data server. */
   world?: number
   variant?: WorldMapVariant
   className?: string
@@ -66,7 +76,7 @@ export function WorldMapDisplay({
   className,
 }: WorldMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const markersRef = useRef<PlayerMarkers | null>(null)
+  const markersRef = useRef<MapMarkers | null>(null)
 
   const theme = VARIANTS[variant]
 
@@ -75,6 +85,16 @@ export function WorldMapDisplay({
   const [searchQuery, setSearchQuery] = useState('')
   const [showNames, setShowNames] = useState(true)
   const [selected, setSelected] = useState<string | null>(null)
+  const stored = useSyncExternalStore(noSubscription, storedStyle, () => 'detailed' as const)
+  const [chosen, setChosen] = useState<MapStyle | null>(null)
+  const mapStyle = chosen ?? stored
+
+  const chooseStyle = (style: MapStyle) => {
+    setChosen(style)
+    try {
+      localStorage.setItem(STYLE_KEY, style)
+    } catch {}
+  }
 
   const { players, updatedAt, error } = usePlayerPositions(initialPlayers, world)
 
@@ -87,8 +107,6 @@ export function WorldMapDisplay({
     markersRef.current?.focus(username)
   }, [])
 
-  // boot the map once — the library reaches for `document`/`navigator` at
-  // import time, so it can only be pulled in from the browser
   useEffect(() => {
     const container = containerRef.current
 
@@ -96,30 +114,54 @@ export function WorldMapDisplay({
       return
     }
 
-    let markers: PlayerMarkers | null = null
+    let markers: MapMarkers | null = null
     let cancelled = false
 
     const load = async () => {
       try {
-        const { default: WorldMap } = await import('@2003scape/rsc-world-map')
+        if (mapStyle === 'detailed') {
+          const view = await DetailedMapView.create(container, { onSelect: select })
+
+          if (cancelled) {
+            view.destroy()
+            return
+          }
+
+          markers = view
+          markersRef.current = view
+          setReady(true)
+          return
+        }
+
+        const [{ default: WorldMap }, baked] = await Promise.all([
+          import('@2003scape/rsc-world-map'),
+          loadBakedMap(),
+        ])
 
         if (cancelled) {
           return
         }
 
-        const worldMap = new WorldMap({ container })
+        const worldMap = new WorldMap({
+          container,
+          labels: baked.labels,
+          points: baked.points,
+          objects: baked.objects,
+        })
+        swapInBakedPlanes(worldMap)
         await worldMap.init()
+        addExtraPoints(worldMap, baked.extraPoints)
 
         if (cancelled) {
           container.innerHTML = ''
           return
         }
 
-        markers = new PlayerMarkers(worldMap, { onSelect: select })
-        markers.attach()
-        markersRef.current = markers
+        const classic = new PlayerMarkers(worldMap, { onSelect: select })
+        classic.attach()
+        markers = classic
+        markersRef.current = classic
 
-        // the effect below plants the markers once `ready` flips
         setReady(true)
       } catch (err) {
         console.error(err)
@@ -139,7 +181,7 @@ export function WorldMapDisplay({
       container.innerHTML = ''
       setReady(false)
     }
-  }, [select])
+  }, [select, mapStyle])
 
   useEffect(() => {
     markersRef.current?.setPlayers(players)
@@ -171,7 +213,23 @@ export function WorldMapDisplay({
           </span>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="inline-flex overflow-hidden rounded-md border border-stone-700 text-xs" role="group" aria-label="Map style">
+            {(['detailed', 'classic'] as const).map((style) => (
+              <button
+                key={style}
+                type="button"
+                aria-pressed={mapStyle === style}
+                onClick={() => chooseStyle(style)}
+                className={cn(
+                  'px-3 py-1.5 capitalize transition-colors',
+                  mapStyle === style ? 'bg-stone-700 text-gold-400' : 'text-text-secondary hover:text-gold-400',
+                )}
+              >
+                {style}
+              </button>
+            ))}
+          </div>
           <label className="flex cursor-pointer items-center gap-2 text-sm text-text-secondary">
             <input
               type="checkbox"
@@ -189,13 +247,14 @@ export function WorldMapDisplay({
 
       <div
         className={cn(
-          'relative overflow-hidden rounded-lg border bg-stone-900',
+          'relative isolate overflow-hidden rounded-lg border bg-stone-900',
           theme.frame,
         )}
       >
         <div
+          key={mapStyle}
           ref={containerRef}
-          className={cn('h-[420px] w-full sm:h-[560px] lg:h-[640px]', theme.mapClass)}
+          className={cn('h-[420px] w-full sm:h-[560px] lg:h-[640px] [&_img]:max-w-none', theme.mapClass, mapStyle === 'detailed' && 'rsc-dmap')}
           role="application"
           aria-label={`RuneScape Classic world map, world ${world}`}
         />
@@ -208,8 +267,8 @@ export function WorldMapDisplay({
       </div>
 
       <p className="text-xs text-text-muted">
-        Drag to pan, scroll or use +/- to zoom, and use Up/Down to view upstairs
-        floors and dungeons. Player positions refresh every 10 seconds.
+        Drag to pan, scroll or use +/- to zoom, and use {mapStyle === 'detailed' ? '▲/▼' : 'Up/Down'} to
+        view upstairs floors and dungeons. Player positions refresh every 10 seconds.
       </p>
 
       {filteredPlayers.length > 0 ? (
@@ -254,7 +313,6 @@ export function WorldMapDisplay({
   )
 }
 
-/** Clock time of the most recent successful poll. */
 function LastUpdated({ updatedAt }: { updatedAt: number | null }) {
   if (!updatedAt) {
     return <>Updating…</>

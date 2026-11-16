@@ -55,11 +55,29 @@ declare module '@2003scape/rsc-world-map' {
     search(terms: string): void
   }
 
+  interface PointElements {
+    /** One template element per point type, cloned for every point. */
+    elements: Record<string, HTMLElement>
+    points: WorldMapPoint[]
+  }
+
+  interface KeyElements {
+    toggledPoints: Record<string, boolean>
+  }
+
   class WorldMap {
     constructor(options: WorldMapOptions)
 
     container: HTMLElement
     planeWrap: HTMLElement
+    imageWidth: number
+    imageHeight: number
+    objects: WorldMapObject[]
+    planeImages: HTMLImageElement[]
+    /** Fills `planeImages`; the first thing `init()` does. */
+    loadImages(): Promise<void>
+    pointElements: PointElements
+    keyElements: KeyElements
     /** Currently displayed plane: 0 surface, 1-2 upstairs, 3 underground. */
     currentPlane: number
     transitions: boolean

@@ -1,14 +1,17 @@
 /**
  * Coordinate helpers for the RuneScape Classic world map.
  *
- * `@2003scape/rsc-world-map` renders every plane as a 2448x2736 image in which
- * one game tile is three pixels and the x axis runs east-to-west (mirrored).
- * This is the same transform the library applies to scenery in its own
- * `entity-canvas.js`, reused here for live player coordinates.
+ * `@2003scape/rsc-world-map` draws every plane as an image in which one game
+ * tile is three pixels and the x axis runs east-to-west (mirrored). The site
+ * gives it the dev stage's baked planes (public/world-map), which keep the
+ * library's west edge and run further east, to Solmara's negative x.
  */
 
-/** Width of a rendered plane image, in pixels. */
-export const MAP_IMAGE_WIDTH = 2448
+/** Pixel x of game x 0: the library's own 2448px width, kept by the bake. */
+export const MAP_X_ORIGIN = 2448
+
+/** Width of a baked plane image (sectors 22..64), in pixels. */
+export const MAP_IMAGE_WIDTH = 6192
 
 /** Height of a rendered plane image, in pixels. */
 export const MAP_IMAGE_HEIGHT = 2736
@@ -47,7 +50,7 @@ export function gameToMap(x: number, y: number, plane?: number): MapPoint {
   const localY = encodedPlane === resolvedPlane ? y - resolvedPlane * PLANE_ELEVATION : y
 
   return {
-    x: MAP_IMAGE_WIDTH - x * TILE_SIZE - X_OFFSET,
+    x: MAP_X_ORIGIN - x * TILE_SIZE - X_OFFSET,
     y: localY * TILE_SIZE - Y_OFFSET,
     plane: resolvedPlane,
   }
