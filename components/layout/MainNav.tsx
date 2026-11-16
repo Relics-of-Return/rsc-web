@@ -48,7 +48,7 @@ export function MainNav() {
                   <Link
                     href={href}
                     className={cn(
-                      'relative px-4 py-2 text-sm font-medium uppercase tracking-wide transition-colors',
+                      'relative block whitespace-nowrap px-2.5 xl:px-4 py-2 text-sm font-medium uppercase tracking-wide transition-colors',
                       active ? 'text-gold-400' : 'text-text-secondary hover:text-gold-400'
                     )}
                   >
@@ -63,7 +63,7 @@ export function MainNav() {
           </ul>
 
           <div className="hidden lg:flex items-center gap-3">
-            <Button asChild size="md">
+            <Button asChild size="md" className="whitespace-nowrap">
               <Link href="/play">Play Now</Link>
             </Button>
           </div>

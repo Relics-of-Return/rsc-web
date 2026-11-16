@@ -20,7 +20,7 @@ Relics of Return is an open-source RuneScape Classic (RSC) private server and em
 - [Download Desktop Launcher](${SITE_URL}/download): Cross-platform standalone desktop launcher for Windows, macOS, and Linux with auto-updates and enhanced performance.
 
 ## World & Community Features
-- [Live Hiscores](${SITE_URL}/hiscores): Real-time leaderboards tracking overall levels, experience, and individual skill rankings (Attack, Defense, Strength, Hits, Ranged, Prayer, Magic, Cooking, Woodcutting, Fletching, Fishing, Firemaking, Crafting, Smithing, Mining, Herblaw, Agility, Thieving).
+- [Live Hiscores](${SITE_URL}/hiscores): Real-time leaderboards tracking overall levels, experience, and individual skill rankings (Attack, Defense, Strength, Hits, Ranged, Prayer, Magic, Cooking, Woodcutting, Fletching, Fishing, Firemaking, Crafting, Smithing, Mining, Herblaw, Agility, Thieving, Construction, Farming, Runecraft).
 - [Player Trade Post](${SITE_URL}/tradepost): Live marketplace and search engine for player-to-player trading and item listings.
 - [World Map](${SITE_URL}/map): Interactive 2D map of Gielinor with landmarks, dungeons, wilderness areas, and point-of-interest markers.
 - [Development Roadmap](${SITE_URL}/roadmap): Project milestones, completed features, active developments, and planned expansions.
@@ -80,6 +80,9 @@ export function getLlmsFullTxt(): string {
 16. Herblaw
 17. Agility
 18. Thieving
+19. Construction
+20. Farming
+21. Runecraft
 
 ### Contact & Support
 For bugs, appeals, or technical assistance, join the official Discord server at ${DISCORD_URL}.
@@ -146,7 +149,7 @@ export function getRouteMarkdown(pathname: string): string {
 - **API Endpoint**: ${SITE_URL}/api/hiscores
 - **Categories**:
   - Overall Rank (Total Level & Total XP)
-  - 18 Individual Skills (Combat & Non-Combat)
+  - 21 Individual Skills (Combat & Non-Combat)
   - Game Modes: Standard, Regular Iron Man, Ultimate Iron Man, Hardcore Iron Man
 `
 

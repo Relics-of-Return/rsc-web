@@ -19,12 +19,9 @@ export const DEFAULT_SKILLS = [
   'thieving',
   'construction',
   'farming',
+  'runecraft',
 ]
 
-/**
- * Canonical display order for hiscores: the overall total comes first,
- * followed by the individual skills.
- */
 export const HISCORE_SKILLS = ['overall', ...DEFAULT_SKILLS]
 
 const SKILL_LABEL_OVERRIDES: Record<string, string> = {
