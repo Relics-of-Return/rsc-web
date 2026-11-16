@@ -7,6 +7,7 @@ import type {
   AdminNewsArticleData,
   AdminNewsData,
   BetaAccess,
+  AcceptedBetaTester,
   BetaTestersData,
   GuideRevisionsData,
   LoginResult,
@@ -364,6 +365,14 @@ export async function changeAccountPassword(change: { password: string; newPassw
 /** Staff: every account linked to Discord, and whether it holds the Beta Tester role. */
 export async function getBetaTesters(): Promise<BetaTestersData> {
   return apiJSON<BetaTestersData>('/api/admin/beta-testers')
+}
+
+/** Staff: accept an account as a beta tester without the Discord role, or take it back. */
+export async function setBetaTesterAccepted(
+  username: string,
+  accepted: boolean,
+): Promise<{ accepted: AcceptedBetaTester[] }> {
+  return apiJSON<{ accepted: AcceptedBetaTester[] }>('/api/admin/beta-testers/accept', { username, accepted })
 }
 
 /** The logged-in player's Discord link and beta access (the invite-only beta). */

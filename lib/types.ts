@@ -676,6 +676,15 @@ export interface BetaTesterLink {
 export interface BetaTestersData {
   enabled: boolean
   links: BetaTesterLink[]
+  /** Accounts staff accepted on the website, testers without the Discord role. */
+  accepted: AcceptedBetaTester[]
+}
+
+/** An account staff accepted as a beta tester; `at` is unix milliseconds. */
+export interface AcceptedBetaTester {
+  username: string
+  by: string
+  at: number
 }
 
 // the account page (rsc-www's /api/account): the account on every world, since

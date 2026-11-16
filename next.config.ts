@@ -12,16 +12,6 @@ const nextConfig: NextConfig = {
     ]
   },
 
-  async redirects() {
-    return [
-      {
-        source: '/beta',
-        destination: 'https://github.com/orgs/Relics-of-Return/projects/1',
-        permanent: false,
-      },
-    ]
-  },
-
   async headers() {
     return [
       {
