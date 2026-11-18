@@ -2,7 +2,7 @@ export type BetaTest = { text: string; careful?: boolean };
 
 export type BetaArea = { title: string; careful?: boolean; items: BetaTest[] };
 
-export const betaRevision = "2026.11.16-4c444e1e58bc";
+export const betaRevision = "2026.11.18-2ad8ee658adb";
 
 export const betaAreas: BetaArea[] = [
   {
@@ -88,6 +88,9 @@ export const betaAreas: BetaArea[] = [
       },
       {
         text: "Duplication verification: rapidly drop and collect non-stackable items, initiate trades, and bank inventory; item quantities remain consistent with no duplication.",
+      },
+      {
+        text: "**New: 192 bank slots.** The modern bank's title shows slots used of the bank's size (e.g. `21/192 items`); the classic bank keeps its four page buttons; a bank filled past 100 items opens with every item and count intact.",
       },
     ],
   },
@@ -208,6 +211,68 @@ export const betaAreas: BetaArea[] = [
     ],
   },
   {
+    title: "Run Energy (Fatigue Removed)",
+    items: [
+      {
+        text: 'Fatigue is gone: training never says "too tired", and there is no sleeping or sleep word.',
+      },
+      {
+        text: "The run orb beside the minimap shows run energy and toggles running; a runner moves two tiles per tick and energy drains while running.",
+      },
+      {
+        text: "Energy recovers while walking or standing, faster at higher Agility; running stops at 0% energy.",
+      },
+      {
+        text: "Run energy and the run toggle persist across logout and relog.",
+      },
+      {
+        text: "Running uses the Old School run animation, viewed from every angle (side, corners, toward and away from the camera), in Classic and HD modes.",
+      },
+      {
+        text: "Status Bars and the Classic Hits / Prayer stack display a run energy bar in place of fatigue; `::stats` lists run energy.",
+      },
+      {
+        text: "Claimed achievement diary tiers (the seasoned perk) slow the run energy drain.",
+      },
+    ],
+  },
+  {
+    title: "The Idler's Yard (AFK Skilling)",
+    careful: true,
+    items: [
+      {
+        text: "`::afk` teleports to the yard's gate (walled district east of Varrock East Square); the yard plays Lullaby and is named on the world map.",
+      },
+      {
+        text: "The **AFK Master** sells training time for vote tokens (6 hours per token, up to 24 hours held), both via dialogue and by using a token on him.",
+      },
+      {
+        text: "Clicking a training spot once trains continuously with no tools or supplies: woodcutting, mining, fishing, firemaking, cooking, smithing and crafting everywhere; fletching, herblaw, thieving, agility, farming and runecraft on members' worlds.",
+      },
+      {
+        text: "Each spot plays its own Old School animation (anvil hammering, seated spinning, fletching with knife and logs, potion mixing, stall thieving, harpooning, runecraft bind glow) with sounds on the matching frames.",
+      },
+      {
+        text: "The agility log: the character walks it end to end, steps off, turns and walks back (Old School balance walk in HD).",
+      },
+      {
+        text: "The yard's steps are walked, not teleported; left-click is Ascend from below and Descend from above.",
+      },
+      {
+        text: "The top-of-screen panel shows remaining time and session earnings; experience (10,000–55,000 per hour by level, times the game mode multiplier) and about 1,000 AFK tokens per hour are awarded.",
+      },
+      {
+        text: "AFK training brings no random events and no diary, collection log or perk credit; when time runs out, training stops.",
+      },
+      {
+        text: "Logging out mid-training and back in on the same tile within 5 minutes resumes training automatically.",
+      },
+      {
+        text: "The AFK Master's **Trade** shop sells Idler's (lilac) and Daydreamer's (teal) outfits for AFK tokens: prices are shown in tokens, tokens are deducted exactly, the shop buys nothing back, and the outfits and tokens cannot be traded.",
+      },
+    ],
+  },
+  {
     title: "Combat",
     careful: true,
     items: [
@@ -278,6 +343,21 @@ export const betaAreas: BetaArea[] = [
       {
         text: "Nautical travel charts and interface maps display and route correctly.",
       },
+      {
+        text: "The world map names Solmara's kingdom, regions, capital, towns, landmarks and islets, and its 12 dungeons on the dungeon level.",
+      },
+      {
+        text: "NPCs face their placed direction when they appear and after respawning.",
+      },
+      {
+        text: "Roofs on sloping ground rest on their walls (no floating downhill edge, e.g. Solmara's hillsides); raised or sunk scenery stands at the right height in Classic and HD.",
+      },
+      {
+        text: 'Doors and wall objects that go out of view and come back never leave "undefined" lines in the right-click menu.',
+      },
+      {
+        text: '`::teleport` onto your own tile leaves you free to act (no "You are busy" lock).',
+      },
     ],
   },
   {
@@ -334,6 +414,12 @@ export const betaAreas: BetaArea[] = [
       { text: "Experience drops: configuration options within Settings tab." },
       {
         text: 'Skill compendiums for all skills (Stats tab) and dedicated "Relics of Return" guidebook.',
+      },
+      {
+        text: "**Skill Icons** option (Relics of Return plugin): Relics of Return (default), RSC or OSRS icons apply to the stats tab, skill guides and XP drops; the redrawn Relics of Return set includes a Construction icon.",
+      },
+      {
+        text: "The Resizable layout's side panel is solid: the 3D world never shows through it as dark shapes in the inventory.",
       },
       {
         text: "Music system: 876 tracks unlocked via territorial exploration; Area, Shuffle, and Single playback modes; volume and playback settings persist across sessions.",
