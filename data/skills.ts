@@ -38,9 +38,9 @@ export function skillLabel(skill: string): string {
 }
 
 const SKILL_ICON_PATHS: Record<string, string> = {
-  attack: '/skills/melee.webp',
-  strength: '/skills/melee.webp',
-  defense: '/skills/melee.webp',
+  attack: '/skills/attack.png',
+  strength: '/skills/strength.png',
+  defense: '/skills/defense.png',
   ranged: '/skills/ranged.webp',
   prayer: '/skills/prayer.png',
   magic: '/skills/magic.webp',

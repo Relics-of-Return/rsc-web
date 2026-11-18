@@ -138,6 +138,40 @@ export interface HiscoreCollectionData {
   rows: CollectionLogRank[]
 }
 
+/** One row of the vote hiscores, from `/api/hiscores/votes`. */
+export interface VoteRank {
+  rank: number
+  username: string
+  /** Every toplist vote the account has cast. */
+  votes: number
+  /** When the latest was cast (unix seconds). */
+  lastVoteAt: number
+  staffRank: number
+  accountMode: number
+  temper: number
+  /** Null when the character has not chosen a mode yet. */
+  gameMode?: GameMode | null
+}
+
+/** Which votes the vote hiscores count: this month's (UTC) or every one. */
+export type VotePeriod = 'month' | 'all'
+
+/** One page of the vote hiscores (account-wide), from `/api/hiscores/votes`. */
+export interface HiscoreVotesData {
+  world: number
+  period: VotePeriod
+  /** The first second counted (unix seconds); 0 for all time. */
+  since: number
+  page: number
+  pages: number
+  pageSize: number
+  /** How many accounts have voted. */
+  total: number
+  /** Every vote cast, by everyone. */
+  totalVotes: number
+  rows: VoteRank[]
+}
+
 /**
  * A player's achievement diaries as the lookup shows them: per area, how many
  * tiers are complete and how many claimed, and the Ironman helm's temper.

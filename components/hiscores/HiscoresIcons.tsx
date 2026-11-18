@@ -3,7 +3,7 @@ import Image from "next/image";
 
 import { cn } from "@/lib/utils";
 
-export type HiscoreTab = "skills" | "records" | "collection" | string;
+export type HiscoreTab = "skills" | "records" | "collection" | "votes" | string;
 
 export interface HiscoresIconsProps extends ComponentProps<"span"> {
   tab?: HiscoreTab;
@@ -13,6 +13,7 @@ const TAB_ICONS: Record<string, string> = {
   skills: "/hiscores/hiscores_icon.png",
   records: "/records/records_icon.png",
   collection: "/collectionlog/Collection_log.webp",
+  votes: "/vote/vote_icon.png",
 };
 
 export function HiscoresIcons({

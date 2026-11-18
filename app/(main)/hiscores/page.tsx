@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CollectionLogCard } from "@/components/hiscores/CollectionLogCard";
 import { VotesCard } from "@/components/hiscores/VotesCard";
 import { HiscoreCollection } from "@/components/hiscores/HiscoreCollection";
+import { HiscoreVotes } from "@/components/hiscores/HiscoreVotes";
 import {
   HiscoreRecords,
   type RecordsLink,
@@ -26,6 +27,8 @@ import type {
   HiscoreCollectionData,
   HiscoreMilestone,
   HiscoreRecordsData,
+  HiscoreVotesData,
+  VotePeriod,
   HiscoresData,
   PlayerRank,
   PlayerRanksData,
@@ -39,7 +42,7 @@ export const dynamic = "force-dynamic";
 
 const RANKS_PER_PAGE = 16;
 
-type Tab = "skills" | "records" | "collection";
+type Tab = "skills" | "records" | "collection" | "votes";
 
 interface HiscoresPageProps {
   searchParams: Promise<{
@@ -50,6 +53,7 @@ interface HiscoresPageProps {
     world?: string;
     tab?: string;
     milestone?: string;
+    period?: string;
   }>;
 }
 
@@ -68,11 +72,13 @@ const TABS = [
   { id: "skills", label: "Skills" },
   { id: "records", label: "Records" },
   { id: "collection", label: "Collection log" },
+  { id: "votes", label: "Votes" },
 ] as const;
 
 const RECORD_SKILLS = HISCORE_SKILLS.filter((skill) => skill !== "overall");
 
 interface HiscoresLink extends RecordsLink {
+  period?: VotePeriod;
   tab?: Tab;
   mode?: string;
   world?: number;
@@ -91,6 +97,10 @@ export async function generateMetadata({ searchParams }: HiscoresPageProps) {
 
   if (tab === "collection") {
     return { title: "Collection Log Hiscores" };
+  }
+
+  if (tab === "votes") {
+    return { title: "Vote Hiscores" };
   }
 
   return {
@@ -132,18 +142,18 @@ export default async function HiscoresPage({
     world: rawWorld,
     tab: rawTab,
     milestone: rawMilestone,
+    period: rawPeriod,
   } = await searchParams;
 
   const world = parseWorld(rawWorld);
   const tab: Tab =
-    rawTab === "records"
-      ? "records"
-      : rawTab === "collection"
-        ? "collection"
-        : "skills";
+    rawTab === "records" || rawTab === "collection" || rawTab === "votes"
+      ? rawTab
+      : "skills";
   const page = Math.max(0, Number.parseInt(rawPage ?? "0", 10) || 0);
   const mode = hiscoreModeOf(rawMode);
   const milestone: HiscoreMilestone = rawMilestone === "200m" ? "200m" : "99";
+  const period: VotePeriod = rawPeriod === "all" ? "all" : "month";
   const skill =
     rawSkill && HISCORE_SKILLS.includes(rawSkill) ? rawSkill : "overall";
   const recordSkill =
@@ -169,7 +179,10 @@ export default async function HiscoresPage({
       const s = params.skill ?? recordSkill;
       if (s) sp.set("skill", s);
     } else if (t === "collection") {
-      sp.set("tab", "collection");
+      sp.set("tab", t);
+    } else if (t === "votes") {
+      sp.set("tab", t);
+      if ((params.period ?? period) === "all") sp.set("period", "all");
     } else {
       const m = params.mode ?? mode;
       if (m !== "normal") sp.set("mode", m);
@@ -379,7 +392,7 @@ export default async function HiscoresPage({
       <div className="mt-8 flex justify-center">{worldSwitch(worlds)}</div>
 
       <nav
-        className="mt-8 grid grid-cols-3 overflow-hidden rounded-lg border border-stone-700 bg-stone-900/60"
+        className="mt-8 grid grid-cols-2 sm:grid-cols-4 overflow-hidden rounded-lg border border-stone-700 bg-stone-900/60"
         aria-label="Hiscores"
       >
         {TABS.map(({ id, label }) => (
@@ -483,6 +496,45 @@ export default async function HiscoresPage({
           problem={problem}
           page={page}
           href={(link) => buildHref({ tab: "collection", ...link })}
+        />
+      </Container>
+    );
+  }
+
+  if (tab === "votes") {
+    let votes: HiscoreVotesData | null = null;
+    let problem: RecordsProblem | null = null;
+
+    try {
+      const query = new URLSearchParams({ page: String(page), period });
+      if (world !== 1) query.set("world", String(world));
+
+      votes = await fetchWwwJson<HiscoreVotesData>(
+        `/api/hiscores/votes?${query}`,
+        { headers: visitor },
+      );
+    } catch (error) {
+      problem = problemOf(error);
+    }
+
+    const worlds = await worldsPromise;
+
+    return (
+      <Container className="py-16">
+        <SectionTitle
+          eyebrow="Leaderboard"
+          title="Votes"
+          description="Every vote cast for Relics of Return on the toplist, counted per account across all worlds."
+        />
+
+        {header(worlds)}
+
+        <HiscoreVotes
+          data={votes}
+          problem={problem}
+          period={period}
+          page={page}
+          href={(link) => buildHref({ tab: "votes", ...link })}
         />
       </Container>
     );
